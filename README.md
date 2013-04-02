@@ -56,6 +56,9 @@ SSIM index of 100 frames.
 ## Requirements
 
 * [Python](http://www.python.org/) 
+* [NumPy](http://www.numpy.org/)
+* [SciPy](http://www.scipy.org/)
+* [Matplotlib](http://matplotlib.org/)
 * [MediaInfo](http://mediainfo.sourceforge.net/en)
 * [FFMPEG](http://ffmpeg.org/ffmpeg.html)
 * [HandBrakeCLI](https://trac.handbrake.fr/wiki/CLIGuide)
