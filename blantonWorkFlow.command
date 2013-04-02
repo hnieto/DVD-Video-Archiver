@@ -32,7 +32,7 @@ wait
 ffmpeg -i $FILENAME/$NAMEMOVIE.iso > $FILENAME/$NAMEMOVIEFormat.txt 2>&1
 
 #select streams
-export VWF=~/Desktop/VideoWorkflow
+export VWF=~/Desktop/DVD-Video-Archiver
 python $VWF/convert.py $FILENAME/$NAMEMOVIEFormat.txt $FILENAME/$NAMEMOVIE.iso $NAMEMOVIE.mkv $NAMEMOVIE.mp4 $FILENAME/$NAMEMOVIE.xml
 chmod 755 $FILENAME/convert.sh
 
@@ -65,3 +65,7 @@ date "+DATE: %Y-%m-%d%nTIME: %H:%M:%S" >> $FILENAME/$NAMEMOVIE.txt
 rm -r $FILENAME/copy
 rm -r $FILENAME/original
 rm -r $FILENAME/convert.sh
+
+# use for block commenting
+#: <<'END'
+#END
