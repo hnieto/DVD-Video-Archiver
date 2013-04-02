@@ -66,8 +66,3 @@ SSIM index of 100 frames.
 * Parallelize the workflow to take advantage of HPC system resources for large video collections
 * Create single package with Graphical User Interface
 * Improve logging to facilitate metadata comparison 
-
-
-## Outstanding Issues
-
-* large Matroska file (>20GB) generated for some DVD images 
