@@ -1,3 +1,8 @@
+'''
+File convert.py
+@authors: Karla Vega & Heriberto Nieto, TACC Visualization Laboratory, http://www.tacc.utexas.edu/resources/visualization
+'''
+
 import sys
 import os
 import xml.etree.ElementTree as ET
