@@ -12,7 +12,7 @@ import wx
 class Archiver(wx.Frame):
 
     def __init__(self, parent, title):    
-        super(Archiver, self).__init__(parent, title=title, size=(500, 400))
+        super(Archiver, self).__init__(parent, title=title, size=(500, 625))
 
         self.InitUI()
         self.Centre()
@@ -60,29 +60,34 @@ class Archiver(wx.Frame):
         self.gridSizer.Add(self.button2, pos=(4, 4), flag=wx.TOP|wx.RIGHT, border=5)
 
         # check boxes
-        self.staticBox = wx.StaticBox(self.panel, label="Optional Attributes")
-
-        self.boxSizer = wx.StaticBoxSizer(self.staticBox, wx.VERTICAL)
         self.makeISO = wx.CheckBox(self.panel, label="Create ISO")
         self.makeISO.SetValue(True)
         self.makeMKV = wx.CheckBox(self.panel, label="Create Matroska")
         self.makeMP4 = wx.CheckBox(self.panel, label="Create MP4")
         self.makeMP4.SetValue(True)
+        
+        self.staticBox = wx.StaticBox(self.panel, label="Optional Attributes")
+        self.boxSizer = wx.StaticBoxSizer(self.staticBox, wx.VERTICAL)
         self.boxSizer.Add(self.makeISO, flag=wx.LEFT|wx.TOP, border=5)
         self.boxSizer.Add(self.makeMKV, flag=wx.LEFT, border=5)
         self.boxSizer.Add(self.makeMP4,flag=wx.LEFT, border=5)
         self.boxSizer.Add((0,10), 0)
         self.gridSizer.Add(self.boxSizer, pos=(6, 0), span=(1, 5), flag=wx.EXPAND|wx.TOP|wx.LEFT|wx.RIGHT , border=10)
+        
+        # logging
+        self.log = wx.TextCtrl(self.panel, style=wx.TE_MULTILINE)
+        self.log.AppendText("Program Log")
+        self.gridSizer.Add(self.log, pos=(8, 0), span=(9, 5), flag=wx.EXPAND|wx.TOP|wx.LEFT|wx.RIGHT , border=10)
 
         # control buttons
         self.button3 = wx.Button(self.panel, label='Help')
-        self.gridSizer.Add(self.button3, pos=(8, 0), flag=wx.LEFT, border=10)
+        self.gridSizer.Add(self.button3, pos=(18, 0), flag=wx.LEFT, border=10)
 
         self.button4 = wx.Button(self.panel, label="Archive")
-        self.gridSizer.Add(self.button4, pos=(8, 3))
+        self.gridSizer.Add(self.button4, pos=(18, 3))
 
         self.button5 = wx.Button(self.panel, label="Cancel")
-        self.gridSizer.Add(self.button5, pos=(8, 4), span=(1, 1), flag=wx.BOTTOM|wx.RIGHT, border=5)
+        self.gridSizer.Add(self.button5, pos=(18, 4), span=(1, 1), flag=wx.BOTTOM|wx.RIGHT, border=5)
 
         self.gridSizer.AddGrowableCol(2)
         
