@@ -7,6 +7,9 @@ Note: wxPython requires Python to be run in 32-bit mode. If the computer running
       open a terminal and run "export VERSIONER_PYTHON_PREFER_32_BIT=yes"
 '''
 
+import sys
+import traceback
+from wx.lib.wordwrap import wordwrap
 import wx
 
 class Archiver(wx.Frame):
@@ -96,6 +99,27 @@ class Archiver(wx.Frame):
         # event handling
         self.button1.Bind(wx.EVT_BUTTON, self.get_output_dir)
         self.button2.Bind(wx.EVT_BUTTON, self.get_dvd_dir)
+        self.button3.Bind(wx.EVT_BUTTON, self.open_help)
+        
+    def open_help(self, event):
+        info = wx.AboutDialogInfo()
+        info.Name = "DVD Video Archiver"
+        info.Version = "(version 0.0.1)"
+        info.Description = wordwrap(
+            "DVD Video Archiver is an application developed by the Texas Advanced Computing Center "
+            "to aid in the the preservation of digital art stored in DVD media.\n\n\n"
+            "\t\t\t\tPROGRAM USAGE\n\n"
+            "Output Directory:\nType or Select the directory in which you wish to store all output files.\n\n"
+            "Output File Name:\nProvide a name to be used for all generated files.\n\n"
+            "DVD Directory:\nType or Select the directory of the DVD or ISO image.\n\n"
+            "Optional Attributes:\nSelect the preservation media files that you would like to be generated.\n\n"
+            "Logging:\nAll application procedures will be documented in the program log window.\n\n",
+            350, wx.ClientDC(self.panel))
+        info.WebSite = ("https://github.com/hnieto/DVD-Video-Archiver", "Github Repo")
+        info.Developers = ["Heriberto Nieto", "Maria Esteva", "Karla Vega", "Summer Gunnels"]
+        
+        # Show the wx.AboutBox
+        wx.AboutBox(info)
         
     def get_output_dir(self, event):
         dlg = wx.DirDialog(self, "", style=wx.DD_DEFAULT_STYLE | wx.DD_NEW_DIR_BUTTON)
@@ -111,9 +135,14 @@ class Archiver(wx.Frame):
             self.textBox3.SetValue(self.selectedPath)
         dlg.Destroy()
 
-
 if __name__ == '__main__':
-  
+
     app = wx.App()
-    Archiver(None, title="Texas Advanced Computing Center")
-    app.MainLoop()
+    try:
+        Archiver(None, title="Texas Advanced Computing Center")
+        app.MainLoop()
+    except:
+        # show error messages in pop up
+        message = ''.join(traceback.format_exception(*sys.exc_info()))
+        dialog = wx.MessageDialog(None, message, 'Error!', wx.OK|wx.ICON_ERROR)
+        dialog.ShowModal()
