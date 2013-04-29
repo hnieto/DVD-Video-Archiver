@@ -1,5 +1,7 @@
 # DVD Video Archiver
 
+![DVD Video Archiver](https://dl.dropboxusercontent.com/u/25652072/DVD-Video-Archiver.jpg)
+
 These scripts create an automated workflow that produces a submission information package (SIP) for archiving video art acquired originally in DVD format. For each DVD submitted to the workflow,
 the resultant SIP contains an ISO disk image, production quality and access files, and a logs that record the technical metadata about the files and about the conversion processes involved.
 The project was elicited by the need of the Blanton Museum of Art at the University of Texas at Austin to find a file-based preservation solution to archive their video art collection 
