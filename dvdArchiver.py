@@ -11,7 +11,8 @@ import sys
 import traceback
 from wx.lib.wordwrap import wordwrap
 import wx.lib.agw.genericmessagedialog as GMD
-from textBoxValidator import textBoxValidator
+import os
+import re
 import wx
 
 class Archiver(wx.Frame):
@@ -43,7 +44,7 @@ class Archiver(wx.Frame):
         self.label2 = wx.StaticText(self.panel, label="Output Directory")
         self.gridSizer.Add(self.label2, pos=(2, 0), flag=wx.LEFT|wx.TOP, border=10)
 
-        self.textBox1 = wx.TextCtrl(self.panel, validator=textBoxValidator())
+        self.textBox1 = wx.TextCtrl(self.panel)#, validator=textBoxValidator())
         self.gridSizer.Add(self.textBox1, pos=(2, 1), span=(1, 3), flag=wx.TOP|wx.EXPAND, border=5)
         
         self.button1 = wx.Button(self.panel, label="Browse...")
@@ -52,13 +53,13 @@ class Archiver(wx.Frame):
         self.label3 = wx.StaticText(self.panel, label="Output File Name")
         self.gridSizer.Add(self.label3, pos=(3, 0), flag=wx.LEFT|wx.TOP, border=10)
 
-        self.textBox2 = wx.TextCtrl(self.panel, validator=textBoxValidator())
+        self.textBox2 = wx.TextCtrl(self.panel)#, validator=textBoxValidator())
         self.gridSizer.Add(self.textBox2, pos=(3, 1), span=(1, 3), flag=wx.TOP|wx.EXPAND, border=5)
 
         self.label4 = wx.StaticText(self.panel, label="DVD Directory")
         self.gridSizer.Add(self.label4, pos=(4, 0), flag=wx.TOP|wx.LEFT, border=10)
         
-        self.textBox3 = wx.TextCtrl(self.panel, validator=textBoxValidator())
+        self.textBox3 = wx.TextCtrl(self.panel)#, validator=textBoxValidator())
         self.gridSizer.Add(self.textBox3, pos=(4, 1), span=(1, 3), flag=wx.TOP|wx.EXPAND, border=5)
         
         self.button2 = wx.Button(self.panel, label="Browse...")
@@ -109,7 +110,76 @@ class Archiver(wx.Frame):
         self.archive.Bind(wx.EVT_BUTTON, self.run_app)
                 
     def run_app(self, event):
-        self.panel.Validate()
+        self.validateUI()
+        
+    def validateUI(self):
+        if(self.textBoxValidator() and self.checkBoxValidator()):
+            print "Ready to run"
+            
+        
+    def textBoxValidator(self):
+        # check if textbox is empty
+        if len(self.textBox1.GetValue()) == 0: 
+            wx.MessageBox("Please enter an output directory.", "Error")
+            self.textBox1.SetBackgroundColour("pink")
+            self.textBox1.SetFocus()
+            self.textBox1.Refresh()
+            return False
+        else:
+             self.textBox1.SetBackgroundColour(wx.SystemSettings_GetColour(wx.SYS_COLOUR_WINDOW))
+             self.textBox1.Refresh()
+             
+             # check if directory exists
+             if not os.path.exists(self.textBox1.GetValue()):
+                wx.MessageBox("The directory does not exist.\nVerify your spelling and format or use the directory dialog.", "Error")
+                self.textBox1.SetBackgroundColour("pink")
+                self.textBox1.SetFocus()
+                self.textBox1.Refresh()
+                return False
+             
+        # check if textbox is empty
+        if len(self.textBox2.GetValue()) == 0: 
+            wx.MessageBox("Please enter a file name.", "Error")
+            self.textBox2.SetBackgroundColour("pink")
+            self.textBox2.SetFocus()
+            self.textBox2.Refresh()
+            return False
+        else:
+            self.textBox2.SetBackgroundColour(wx.SystemSettings_GetColour(wx.SYS_COLOUR_WINDOW))
+            self.textBox2.Refresh()
+            
+            # check if filename is valid (only alphanumeric, hypen, underscore allowed)
+            if re.search(r'[^A-Za-z0-9_\-\\]',self.textBox2.GetValue()):
+                wx.MessageBox("Filename can only contain letters, numbers, hyphens, and underscores. Please try again.", "Error")
+                self.textBox2.SetBackgroundColour("pink")
+                self.textBox2.SetFocus()
+                self.textBox2.Refresh()
+                return False
+         
+        # check if textbox is empty
+        if len(self.textBox3.GetValue()) == 0:
+            wx.MessageBox("Please enter a DVD directory.", "Error")
+            self.textBox3.SetBackgroundColour("pink")
+            self.textBox3.SetFocus()
+            self.textBox3.Refresh()
+            return False
+        else:
+            self.textBox3.SetBackgroundColour(wx.SystemSettings_GetColour(wx.SYS_COLOUR_WINDOW))
+            self.textBox3.Refresh()
+
+            # check if directory exists
+            if not os.path.exists(self.textBox3.GetValue()):
+                wx.MessageBox("The directory does not exist.\nVerify your spelling and format or use the directory dialog.", "Error")
+                self.textBox3.SetBackgroundColour("pink")
+                self.textBox3.SetFocus()
+                self.textBox3.Refresh()
+                return False
+             
+        return True
+        
+    def checkBoxValidator(self):
+        return True
+            
         
     def open_help(self, event):
         msg = wordwrap(
