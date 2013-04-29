@@ -66,14 +66,13 @@ class Archiver(wx.Frame):
         self.gridSizer.Add(self.button2, pos=(4, 4), flag=wx.TOP|wx.RIGHT, border=5)
 
         # check boxes
+        self.staticBox = wx.StaticBox(self.panel, label="Optional Attributes")
+        self.boxSizer = wx.StaticBoxSizer(self.staticBox, wx.VERTICAL)
         self.makeISO = wx.CheckBox(self.panel, label="Create ISO")
         self.makeISO.SetValue(True)
         self.makeMKV = wx.CheckBox(self.panel, label="Create Matroska")
         self.makeMP4 = wx.CheckBox(self.panel, label="Create MP4")
         self.makeMP4.SetValue(True)
-        
-        self.staticBox = wx.StaticBox(self.panel, label="Optional Attributes")
-        self.boxSizer = wx.StaticBoxSizer(self.staticBox, wx.VERTICAL)
         self.boxSizer.Add(self.makeISO, flag=wx.LEFT|wx.TOP, border=5)
         self.boxSizer.Add(self.makeMKV, flag=wx.LEFT, border=5)
         self.boxSizer.Add(self.makeMP4,flag=wx.LEFT, border=5)
@@ -178,16 +177,19 @@ class Archiver(wx.Frame):
         return True
         
     def checkBoxValidator(self):
-        return True
-            
+        if self.makeISO.GetValue() or self.makeMKV.GetValue() or self.makeMP4.GetValue():
+            return True
+        else:
+            wx.MessageBox("Nothing left to do.\n\nSelect at least one of the following archive media format:\nISO, MKV, or MP4", "Error")
+            return False
         
     def open_help(self, event):
         msg = wordwrap(
-            "Output Directory:\nType or Select the directory in which you wish to store all output files.\n\n"
-            "Output File Name:\nProvide a name to be used for all generated files.\n\n"
-            "DVD Directory:\nType or Select the directory of the Master DVD or ISO image.\n\n"
-            "Optional Attributes:\nSelect the preservation media files that you would like to be generated.\n\n"
-            "Logging:\nAll application procedures will be documented in the program log window.\n\n",
+            "Output Directory\nType or Select the directory in which you wish to store all output files.\nFormat: /path/to/folder/\n\n"
+            "Output File Name\nProvide a name to be used for all generated files.\nAllowed characters: letters, numbers, hyphen, underscore\n\n"
+            "DVD Directory\nType or Select the directory of the Master DVD or ISO image.\nFormat: /path/to/dvd/folder/\n\n"
+            "Optional Attributes\nSelect the preservation media files that you would like to be generated.\n\n"
+            "Logging\nAll application procedures will be documented in the program log window.\n\n",
             500, wx.ClientDC(self.panel))
         helpWindow = GMD.GenericMessageDialog(self, msg,"Help", wx.OK | wx.ICON_QUESTION)
         helpWindow.ShowModal()
