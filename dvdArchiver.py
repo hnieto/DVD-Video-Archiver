@@ -14,6 +14,8 @@ import wx.lib.agw.genericmessagedialog as GMD
 import os
 import re
 import wx
+import subprocess
+from time import strftime
 
 class Archiver(wx.Frame):
 
@@ -80,9 +82,9 @@ class Archiver(wx.Frame):
         self.gridSizer.Add(self.boxSizer, pos=(6, 0), span=(1, 5), flag=wx.EXPAND|wx.TOP|wx.LEFT|wx.RIGHT , border=10)
         
         # logging
-        self.log = wx.TextCtrl(self.panel, style=wx.TE_MULTILINE)
-        self.log.AppendText("Waiting on user ...")
-        self.gridSizer.Add(self.log, pos=(8, 0), span=(9, 5), flag=wx.EXPAND|wx.TOP|wx.LEFT|wx.RIGHT , border=10)
+        self.logBox = wx.TextCtrl(self.panel, style=wx.TE_MULTILINE|wx.TE_READONLY)
+        self.logBox.AppendText("Waiting on user ...")
+        self.gridSizer.Add(self.logBox, pos=(8, 0), span=(9, 5), flag=wx.EXPAND|wx.TOP|wx.LEFT|wx.RIGHT , border=10)
 
         # control buttons
         self.about = wx.Button(self.panel, label='About')
@@ -107,14 +109,51 @@ class Archiver(wx.Frame):
         self.about.Bind(wx.EVT_BUTTON, self.open_about)
         self.help.Bind(wx.EVT_BUTTON, self.open_help)
         self.archive.Bind(wx.EVT_BUTTON, self.run_app)
-                
-    def run_app(self, event):
-        self.validateUI()
         
-    def validateUI(self):
+                
+    def run_app(self, event):   
+
+        # validate GUI inputs
         if(self.textBoxValidator() and self.checkBoxValidator()):
-            print "Ready to run"
             
+            self.logBox.AppendText("\nStarting Archive Process")
+            
+            # logs to file and GUI
+            '''
+            self.guiAndFileLogger = DualDestinationLogger(self.logBox, self.textBox1.GetValue())
+            sys.stdout = self.guiAndFileLogger    
+            ''' 
+            self.extractMetaDataToTxt()
+            #self.guiAndFileLogger.filename.close()
+    
+            self.extractMetaDataToXML()
+
+            
+    def extractMetaDataToXML(self):
+        self.logBox.AppendText("#############################\nExtracting DVD MetaData to XML File\n#############################\n") 
+        self.xmlFile = open(os.path.join(self.textBox1.GetValue(), "xml-" + strftime("%y%m%H%M%S") + ".xml"), "w")
+        proc2 = subprocess.Popen("mediainfo --Output=XML -f %s" % self.textBox3.GetValue(), shell=True, stdout=self.xmlFile)
+        proc2.wait()
+        self.xmlFile.close()
+        
+        # restore stdout to normal
+        sys.stdout = sys.__stdout__
+       
+            
+    def extractMetaDataToTxt(self):
+        self.logBox.AppendText("\n\n#############################\nExtracting DVD MetaData to Text File\n#############################\n\n")
+        
+        self.txtFile = open(os.path.join(self.textBox1.GetValue(), "log-" + strftime("%y%m%H%M%S") + ".txt"), "w")
+        proc1 = subprocess.Popen("mediainfo -f %s" % self.textBox3.GetValue(), shell=True, stdout=subprocess.PIPE)
+
+        for line in proc1.stdout:
+            wx.Yield()
+            self.txtFile.write(line)
+            self.logBox.AppendText(line)
+        proc1.wait()
+                
+        # restore stdout to normal
+        sys.stdout = sys.__stdout__
         
     def textBoxValidator(self):
         # check if textbox is empty
