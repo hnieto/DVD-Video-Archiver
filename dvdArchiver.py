@@ -16,6 +16,12 @@ import re
 import wx
 import subprocess
 from time import strftime
+import xml.etree.ElementTree as ET
+
+xmlFile = ""
+iso = ""
+ffmpeg_command = "ffmpeg -i "
+handbrake_command = "HandBrakeCLI -i "
 
 class Archiver(wx.Frame):
 
@@ -117,27 +123,111 @@ class Archiver(wx.Frame):
         if(self.textBoxValidator() and self.checkBoxValidator()):
             
             self.logBox.AppendText("\nStarting Archive Process")
-            
-            # logs to file and GUI
-            '''
-            self.guiAndFileLogger = DualDestinationLogger(self.logBox, self.textBox1.GetValue())
-            sys.stdout = self.guiAndFileLogger    
-            ''' 
             self.extractMetaDataToTxt()
-            #self.guiAndFileLogger.filename.close()
-    
             self.extractMetaDataToXML()
+            self.generate_ffmpeg_command()
+            self.generate_handbrake_command()
+            
+    def generate_handbrake_command(self):
+        global handbrake_command
+        self.logBox.AppendText("\n#############################\nGenerating HandBrake Command\n#############################\n") 
+        handbrake_command += iso + " -o " + self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".mp4"
 
+        self.logBox.AppendText("\nHandBrake command complete.\n")
+        self.logBox.AppendText("HandBrake command = " + handbrake_command + "\n")
+        
+            
+    def generate_ffmpeg_command(self):
+        global ffmpeg_command
+        global iso
+        
+        self.streams = []
+        self.cntVideo = 0
+        self.cntAudio = 0
+        self.cntSubtitle = 0
+        self.logBox.AppendText("#############################\nGenerating FFMPEG Command\n#############################\n") 
+        iso = self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".iso"
+        
+        self.logBox.AppendText("\nAppending ISO to FFMPEG command.\n")
+        ffmpeg_command += iso
+        
+        self.logBox.AppendText("\nParsing XML file for aspect ratio from VIDEO_TS.IFO ... \n")
+        self.tree = ET.parse(xmlFile)
+        self.root = self.tree.getroot()
+        
+        # traverse xml until File_extension == ifo 
+        self.index = 0
+        for child_element in self.tree.iterfind('File/track[@type="General"]/File_extension'):
+            if child_element.text == "ifo":
+                break
+            else:
+                self.index += 1
+                
+        # get aspect ratio from <File> element located at index
+        self.aspectRatio = self.root[self.index].find('track[@type="Video"]/Display_aspect_ratio').text 
+        self.logBox.AppendText("Aspect Ratio found = " + str(self.aspectRatio) + "\n")
+        self.logBox.AppendText("Appending aspect ratio to FFMPEG command.\n")
+        ffmpeg_command += " -aspect " + self.aspectRatio
+                
+        self.logBox.AppendText("\nChecking number of streams ... \n")
+        proc3 = subprocess.Popen("ffmpeg -i %s 2>&1 | grep Stream | awk '{print $3}'" % iso, shell=True, stdout=subprocess.PIPE)
+
+        # redirect command line output into streams[] list
+        for line in proc3.stdout:
+            wx.Yield()
+            self.streams.append(line.strip())
+        proc3.wait()
+                
+        # count number of streams per category
+        for stream in self.streams:
+            if stream == "Video:":
+                self.cntVideo += 1
+            if stream == "Audio:":
+                self.cntAudio += 1
+            if stream == "Subtitle:":
+                self.cntSubtitle += 1
+                
+        self.logBox.AppendText(str(self.cntVideo) + " video streams detected.\n")
+        self.logBox.AppendText(str(self.cntAudio) + " audio streams detected.\n")
+        self.logBox.AppendText(str(self.cntSubtitle) + " subtitle streams detected.\n")
+        
+        for i in range(0, self.cntVideo):
+            ffmpeg_command += " -vcodec ffv1"
+
+        for i in range(0, self.cntAudio):
+            ffmpeg_command += " -acodec copy -ac 2"
+
+        for i in range(0, self.cntSubtitle):
+            ffmpeg_command += " -scodec copy"
+            
+        self.logBox.AppendText("\nAppending MKV path to FFMPEG Command.\n")
+        ffmpeg_command += " -f matroska " + self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".mkv"
+        
+        if self.cntVideo>1:
+            for i in range(1, self.cntVideo):
+                ffmpeg_command += " -newvideo"
+
+        elif self.cntAudio > 1:
+            for i in range(1, self.cntAudio):
+                ffmpeg_command += ""
+        
+        self.logBox.AppendText("\nFFMPEG command complete.\n")
+        self.logBox.AppendText("FFMPEG command = " + ffmpeg_command + "\n")
+                
             
     def extractMetaDataToXML(self):
         self.logBox.AppendText("#############################\nExtracting DVD MetaData to XML File\n#############################\n") 
-        self.xmlFile = open(os.path.join(self.textBox1.GetValue(), "xml-" + strftime("%y%m%H%M%S") + ".xml"), "w")
-        proc2 = subprocess.Popen("mediainfo --Output=XML -f %s" % self.textBox3.GetValue(), shell=True, stdout=self.xmlFile)
+        global xmlFile
+        xmlFile = self.textBox1.GetValue() + "/xml-" + strftime("%y%m%H%M%S") + ".xml"
+        file = open(xmlFile, "w")
+        proc2 = subprocess.Popen("mediainfo --Output=XML -f %s" % self.textBox3.GetValue(), shell=True, stdout=file)
         proc2.wait()
-        self.xmlFile.close()
+        #xmlFile.close()
         
         # restore stdout to normal
         sys.stdout = sys.__stdout__
+        
+        self.logBox.AppendText("\nOperation Completed.\n\n")
        
             
     def extractMetaDataToTxt(self):
@@ -146,6 +236,7 @@ class Archiver(wx.Frame):
         self.txtFile = open(os.path.join(self.textBox1.GetValue(), "log-" + strftime("%y%m%H%M%S") + ".txt"), "w")
         proc1 = subprocess.Popen("mediainfo -f %s" % self.textBox3.GetValue(), shell=True, stdout=subprocess.PIPE)
 
+        # log to gui and txt file
         for line in proc1.stdout:
             wx.Yield()
             self.txtFile.write(line)
@@ -154,6 +245,8 @@ class Archiver(wx.Frame):
                 
         # restore stdout to normal
         sys.stdout = sys.__stdout__
+        
+        self.logBox.AppendText("\nOperation Completed.\n\n")
         
     def textBoxValidator(self):
         # check if textbox is empty
