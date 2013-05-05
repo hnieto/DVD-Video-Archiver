@@ -18,6 +18,7 @@ import subprocess
 from time import strftime
 import xml.etree.ElementTree as ET
 
+txtFile = ""
 xmlFile = ""
 iso = ""
 ffmpeg_command = "ffmpeg -i "
@@ -118,7 +119,6 @@ class Archiver(wx.Frame):
         
                 
     def run_app(self, event):   
-
         # validate GUI inputs
         if(self.textBoxValidator() and self.checkBoxValidator()):
             
@@ -127,16 +127,41 @@ class Archiver(wx.Frame):
             self.extractMetaDataToXML()
             self.generate_ffmpeg_command()
             self.generate_handbrake_command()
+            self.create_matroska()
+            self.create_mp4()
+            #self.quality_control()
             
-    def generate_handbrake_command(self):
-        global handbrake_command
-        self.logBox.AppendText("\n#############################\nGenerating HandBrake Command\n#############################\n") 
-        handbrake_command += iso + " -o " + self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".mp4"
+    def extractMetaDataToTxt(self):
+        global txtFile
+        self.logBox.AppendText("\n\n#############################\nExtracting DVD MetaData to Text File\n#############################\n\n")
+        txtFile = self.textBox1.GetValue() + "/log-" + strftime("%y%m%H%M%S") + ".txt"
+        file = open(txtFile, "w")
+        file.write("#####################################\nExtracting DVD MetaData to Text File\n#####################################\n\n")
+        proc1 = subprocess.Popen("mediainfo -f %s" % self.textBox3.GetValue(), shell=True, stdout=subprocess.PIPE)
 
-        self.logBox.AppendText("\nHandBrake command complete.\n")
-        self.logBox.AppendText("HandBrake command = " + handbrake_command + "\n")
+        # log to gui and txt file
+        for line in proc1.stdout:
+            wx.Yield()
+            file.write(line)
+            self.logBox.AppendText(line)
+        proc1.wait()
+                
+        # restore stdout to normal
+        sys.stdout = sys.__stdout__
+        self.logBox.AppendText("Operation Completed.\n\n")
         
-            
+    def extractMetaDataToXML(self):
+        global xmlFile
+        self.logBox.AppendText("#############################\nExtracting DVD MetaData to XML File\n#############################\n") 
+        xmlFile = self.textBox1.GetValue() + "/xml-" + strftime("%y%m%H%M%S") + ".xml"
+        file = open(xmlFile, "w")
+        proc2 = subprocess.Popen("mediainfo --Output=XML -f %s" % self.textBox3.GetValue(), shell=True, stdout=file)
+        proc2.wait()
+        
+        # restore stdout to normal
+        sys.stdout = sys.__stdout__
+        self.logBox.AppendText("\nOperation Completed.\n\n")
+        
     def generate_ffmpeg_command(self):
         global ffmpeg_command
         global iso
@@ -213,40 +238,50 @@ class Archiver(wx.Frame):
         
         self.logBox.AppendText("\nFFMPEG command complete.\n")
         self.logBox.AppendText("FFMPEG command = " + ffmpeg_command + "\n")
-                
-            
-    def extractMetaDataToXML(self):
-        self.logBox.AppendText("#############################\nExtracting DVD MetaData to XML File\n#############################\n") 
-        global xmlFile
-        xmlFile = self.textBox1.GetValue() + "/xml-" + strftime("%y%m%H%M%S") + ".xml"
-        file = open(xmlFile, "w")
-        proc2 = subprocess.Popen("mediainfo --Output=XML -f %s" % self.textBox3.GetValue(), shell=True, stdout=file)
-        proc2.wait()
-        #xmlFile.close()
         
-        # restore stdout to normal
-        sys.stdout = sys.__stdout__
+    def generate_handbrake_command(self):
+        global handbrake_command
+        self.logBox.AppendText("\n#############################\nGenerating HandBrake Command\n#############################\n") 
+        handbrake_command += iso + " -o " + self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".mp4"
+
+        self.logBox.AppendText("\nHandBrake command complete.\n")
+        self.logBox.AppendText("HandBrake command = " + handbrake_command + "\n")
         
-        self.logBox.AppendText("\nOperation Completed.\n\n")
-       
-            
-    def extractMetaDataToTxt(self):
-        self.logBox.AppendText("\n\n#############################\nExtracting DVD MetaData to Text File\n#############################\n\n")
-        
-        self.txtFile = open(os.path.join(self.textBox1.GetValue(), "log-" + strftime("%y%m%H%M%S") + ".txt"), "w")
-        proc1 = subprocess.Popen("mediainfo -f %s" % self.textBox3.GetValue(), shell=True, stdout=subprocess.PIPE)
+    def create_matroska(self):
+        self.logBox.AppendText("\n#############################\nCreating Matroska File\n#############################\n") 
+        file = open(txtFile, "a")
+        file.write("#############################\nCreating Matroska File\n#############################\n")
+        #proc4 = subprocess.Popen(ffmpeg_command, shell=True, stdout=subprocess.PIPE)
+        proc4 = subprocess.Popen("echo mkv", shell=True, stdout=subprocess.PIPE)
 
         # log to gui and txt file
-        for line in proc1.stdout:
+        for line in proc4.stdout:
             wx.Yield()
-            self.txtFile.write(line)
+            file.write(line)
             self.logBox.AppendText(line)
-        proc1.wait()
+        proc4.wait()
                 
         # restore stdout to normal
         sys.stdout = sys.__stdout__
+        self.logBox.AppendText("Matroska Successfully Created.\n\n")
         
-        self.logBox.AppendText("\nOperation Completed.\n\n")
+    def create_mp4(self):
+        self.logBox.AppendText("#############################\nCreating MP4 File\n#############################\n") 
+        file = open(txtFile, "a")
+        file.write("\n#############################\nCreating MP4 File\n#############################\n")
+        #proc4 = subprocess.Popen(handbrake_command, shell=True, stdout=subprocess.PIPE)
+        proc5 = subprocess.Popen("echo mp4", shell=True, stdout=subprocess.PIPE)
+
+        # log to gui and txt file
+        for line in proc5.stdout:
+            wx.Yield()
+            file.write(line)
+            self.logBox.AppendText(line)
+        proc5.wait()
+                
+        # restore stdout to normal
+        sys.stdout = sys.__stdout__
+        self.logBox.AppendText("MP4 Successfully Created.\n\n")
         
     def textBoxValidator(self):
         # check if textbox is empty
