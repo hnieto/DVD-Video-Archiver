@@ -1,9 +1,17 @@
 '''
+File main_single_image.py
 Created on 21 nov. 2011
-@author: Antoine Vacavant, ISIT lab, antoine.vacavant@iut.u-clermont1.fr, http://isit.u-clermont1.fr/~anvacava
-
-Modified by Christopher Godfrey, on 17 July 2012 (lines 32-34)
+@author: Antoine Vacavant, ISIT lab, antoine.vacavant_AT_iut.u-clermont1.fr, http://isit.u-clermont1.fr/~anvacava
 '''
+
+#Possible use of matplotlib from http://http://matplotlib.sourceforge.net/
+from pylab import * 
+import matplotlib.pyplot as plt
+
+#More imports
+import Image
+import numpy
+import ImageOps
 
 import numpy
 import scipy.ndimage
@@ -11,6 +19,69 @@ from numpy.ma.core import exp
 from scipy.constants.constants import pi
 
 
+def runSSIM(folder1, folder2):
+    listing1 = os.listdir(folder1)
+    listing2 = os.listdir(folder2)
+
+    cnt = 0
+    totalSum = 0
+    ssimArray = []
+    devSum = 0
+
+    for infile in listing1:
+
+        #First image 
+        imgRefMat=build_mat_from_grayscale_image(sys.argv[1]+"/"+infile)
+        (w,h) = (imgRefMat.shape[0],imgRefMat.shape[1])
+        
+        #First subplot
+        figure()
+        subplot(121)
+        plt.imshow(imgRefMat, cmap=cm.gray, hold=True)
+        
+        #Second image
+        imgOutMat=build_mat_from_grayscale_image(sys.argv[2]+"/"+listing2[cnt])
+        
+        #Second subplot
+        subplot(122)
+        plt.imshow(imgOutMat, cmap=cm.gray, hold=True)
+       # plt.show()
+        
+        #Compute SSIM
+        cSSIM=compute_ssim(imgRefMat,imgOutMat)
+        totalSum= totalSum+ cSSIM
+        ssimArray.append(cSSIM)
+
+        # Add counter for next file
+        cnt = cnt + 1
+
+    averageSSIM = totalSum/cnt
+
+    # Determine standard deviation
+    for item in ssimArray:
+        temp = item - averageSSIM
+        temp = temp*temp
+        devSum = devSum + temp
+
+    standardDeviation = devSum/(cnt -1)
+    print "averageSSIM=", averageSSIM
+    print "standardDeviation=", standardDeviation
+
+'''
+Get 2D matrix from an image file, possibly displayed with matplotlib 
+@param path: Image file path on HD
+@return A 2D matrix
+''' 
+def build_mat_from_grayscale_image(path):
+    img=Image.open(str(path))
+    img=ImageOps.grayscale(img)
+    imgData=img.getdata()
+    imgTab=numpy.array(imgData)
+    w,h=img.size
+    imgMat=numpy.reshape(imgTab,(h,w))
+    
+    return imgMat
+    
 '''
 The function to compute SSIM
 @param param: img_mat_1 1st 2D matrix
@@ -81,6 +152,4 @@ def compute_ssim(img_mat_1, img_mat_2):
     index=numpy.average(ssim_map)
 
     return index
-
-    
 

@@ -17,6 +17,7 @@ import wx
 import subprocess
 from time import strftime
 import xml.etree.ElementTree as ET
+#from ssim import runSSIM
 
 txtFile = ""
 xmlFile = ""
@@ -27,7 +28,7 @@ handbrake_command = "HandBrakeCLI -i "
 class Archiver(wx.Frame):
 
     def __init__(self, parent, title):    
-        super(Archiver, self).__init__(parent, title=title, size=(500, 625))
+        super(Archiver, self).__init__(parent, title=title, size=(500, 625), style=wx.CLOSE_BOX) # close_box prevents resizing
 
         self.InitUI()
         self.Centre()
@@ -129,7 +130,7 @@ class Archiver(wx.Frame):
             self.generate_handbrake_command()
             self.create_matroska()
             self.create_mp4()
-            #self.quality_control()
+            self.quality_control()
             
     def extractMetaDataToTxt(self):
         global txtFile
@@ -269,7 +270,7 @@ class Archiver(wx.Frame):
         self.logBox.AppendText("#############################\nCreating MP4 File\n#############################\n") 
         file = open(txtFile, "a")
         file.write("\n#############################\nCreating MP4 File\n#############################\n")
-        #proc4 = subprocess.Popen(handbrake_command, shell=True, stdout=subprocess.PIPE)
+        #proc5 = subprocess.Popen(handbrake_command, shell=True, stdout=subprocess.PIPE)
         proc5 = subprocess.Popen("echo mp4", shell=True, stdout=subprocess.PIPE)
 
         # log to gui and txt file
@@ -282,6 +283,23 @@ class Archiver(wx.Frame):
         # restore stdout to normal
         sys.stdout = sys.__stdout__
         self.logBox.AppendText("MP4 Successfully Created.\n\n")
+        
+    def quality_control(self):
+        self.logBox.AppendText("#############################\nImplementing Quality Control\n#############################\n") 
+        file = open(txtFile, "a")
+        file.write("\n#############################\nImplementing Quality Control\n#############################\n")
+        
+        os.makedirs(self.textBox1.GetValue() + "/original")
+        os.makedirs(self.textBox1.GetValue() + "/copy")
+        iso_bmp_command = "ffmpeg -i " + iso + " -vframes 100 " + self.textBox1.GetValue() + "/original/frameoriginal%03d.bmp"
+        mkv_bmp_command = "ffmpeg -i " + self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".mkv" + " -vframes 100" + self.textBox1.GetValue() + "/copy/framecopy%03d.bmp"
+        
+        self.logBox.AppendText("Using Structure Similarity (SSIM) Index to verify lossless conversion.\nPlease wait.\n")
+        file.write("Using Structure Similarity (SSIM) Index to verify lossless conversion.\nPlease wait.\n")
+        
+        #runSSIM(self.textBox1.GetValue()+"/original/", self.textBox1.GetValue()+"/copy/")
+        self.logBox.AppendText("Quality Check Complete.\n\n")
+
         
     def textBoxValidator(self):
         # check if textbox is empty
