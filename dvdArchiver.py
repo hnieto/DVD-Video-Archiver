@@ -79,10 +79,8 @@ class Archiver(wx.Frame):
         self.staticBox = wx.StaticBox(self.panel, label="Optional Attributes")
         self.boxSizer = wx.StaticBoxSizer(self.staticBox, wx.VERTICAL)
         self.makeISO = wx.CheckBox(self.panel, label="Create ISO")
-        self.makeISO.SetValue(True)
         self.makeMKV = wx.CheckBox(self.panel, label="Create Matroska")
         self.makeMP4 = wx.CheckBox(self.panel, label="Create MP4")
-        self.makeMP4.SetValue(True)
         self.boxSizer.Add(self.makeISO, flag=wx.LEFT|wx.TOP, border=5)
         self.boxSizer.Add(self.makeMKV, flag=wx.LEFT, border=5)
         self.boxSizer.Add(self.makeMP4,flag=wx.LEFT, border=5)
@@ -99,7 +97,7 @@ class Archiver(wx.Frame):
         self.gridSizer.Add(self.about, pos=(18, 0), flag=wx.LEFT, border=10)
         
         self.help = wx.Button(self.panel, label='Help')
-        self.gridSizer.Add(self.help, pos=(18, 1), flag=wx.LEFT, border=-60)
+        self.gridSizer.Add(self.help, pos=(18, 1), flag=wx.LEFT, border=-50)
 
         self.archive = wx.Button(self.panel, label="Archive")
         self.gridSizer.Add(self.archive, pos=(18, 3))
@@ -121,16 +119,25 @@ class Archiver(wx.Frame):
                 
     def run_app(self, event):   
         # validate GUI inputs
-        if(self.textBoxValidator() and self.checkBoxValidator()):
-            
+        if self.textBoxValidator() and self.checkBoxValidator():
             self.logBox.AppendText("\nStarting Archive Process")
             self.extractMetaDataToTxt()
-            self.extractMetaDataToXML()
-            self.generate_ffmpeg_command()
-            self.generate_handbrake_command()
-            self.create_matroska()
-            self.create_mp4()
-            self.quality_control()
+
+            if self.makeISO.GetValue():
+                # to do
+                # need to add dvd decrypting
+                self.generate_iso_command()
+                self.create_iso()
+            
+            elif self.makeMKV.GetValue():
+                self.extractMetaDataToXML()
+                self.generate_ffmpeg_command()
+                self.create_matroska()
+                #self.quality_control()
+            
+            elif self.makeMP4.GetValue():
+                self.generate_handbrake_command()
+                self.create_mp4()
             
     def extractMetaDataToTxt(self):
         global txtFile
@@ -149,7 +156,7 @@ class Archiver(wx.Frame):
                 
         # restore stdout to normal
         sys.stdout = sys.__stdout__
-        self.logBox.AppendText("Operation Completed.\n\n")
+        self.logBox.AppendText("DVD MetaData Extraction Completed.\n\n")
         
     def extractMetaDataToXML(self):
         global xmlFile
@@ -163,6 +170,7 @@ class Archiver(wx.Frame):
         sys.stdout = sys.__stdout__
         self.logBox.AppendText("\nOperation Completed.\n\n")
         
+    ''' used to convert iso to mkv '''
     def generate_ffmpeg_command(self):
         global ffmpeg_command
         global iso
@@ -240,6 +248,7 @@ class Archiver(wx.Frame):
         self.logBox.AppendText("\nFFMPEG command complete.\n")
         self.logBox.AppendText("FFMPEG command = " + ffmpeg_command + "\n")
         
+    ''' used to convert iso to mp4 '''
     def generate_handbrake_command(self):
         global handbrake_command
         self.logBox.AppendText("\n#############################\nGenerating HandBrake Command\n#############################\n") 
@@ -248,12 +257,18 @@ class Archiver(wx.Frame):
         self.logBox.AppendText("\nHandBrake command complete.\n")
         self.logBox.AppendText("HandBrake command = " + handbrake_command + "\n")
         
+    def generate_iso_command(self):
+        global iso_command
+        self.logBox.AppendText("\n#############################\nGenerating ISO Command\n#############################\n") 
+
+        self.logBox.AppendText("\nWARNING: This has not been implemented.\n\n")
+        
     def create_matroska(self):
         self.logBox.AppendText("\n#############################\nCreating Matroska File\n#############################\n") 
         file = open(txtFile, "a")
         file.write("#############################\nCreating Matroska File\n#############################\n")
-        #proc4 = subprocess.Popen(ffmpeg_command, shell=True, stdout=subprocess.PIPE)
-        proc4 = subprocess.Popen("echo mkv", shell=True, stdout=subprocess.PIPE)
+        proc4 = subprocess.Popen(ffmpeg_command, shell=True, stdout=subprocess.PIPE)
+        #proc4 = subprocess.Popen("echo mkv", shell=True, stdout=subprocess.PIPE)
 
         # log to gui and txt file
         for line in proc4.stdout:
@@ -264,14 +279,14 @@ class Archiver(wx.Frame):
                 
         # restore stdout to normal
         sys.stdout = sys.__stdout__
-        self.logBox.AppendText("Matroska Successfully Created.\n\n")
+        self.logBox.AppendText("\nMatroska Successfully Created.\n\n")
         
     def create_mp4(self):
         self.logBox.AppendText("#############################\nCreating MP4 File\n#############################\n") 
         file = open(txtFile, "a")
         file.write("\n#############################\nCreating MP4 File\n#############################\n")
-        #proc5 = subprocess.Popen(handbrake_command, shell=True, stdout=subprocess.PIPE)
-        proc5 = subprocess.Popen("echo mp4", shell=True, stdout=subprocess.PIPE)
+        proc5 = subprocess.Popen(handbrake_command, shell=True, stdout=subprocess.PIPE)
+        #proc5 = subprocess.Popen("echo mp4", shell=True, stdout=subprocess.PIPE)
 
         # log to gui and txt file
         for line in proc5.stdout:
@@ -283,6 +298,13 @@ class Archiver(wx.Frame):
         # restore stdout to normal
         sys.stdout = sys.__stdout__
         self.logBox.AppendText("MP4 Successfully Created.\n\n")
+        
+    def create_iso(self):
+        self.logBox.AppendText("#############################\nCreating ISO File\n#############################\n") 
+        file = open(txtFile, "a")
+        file.write("\n#############################\nCreating ISO File\n#############################\n")
+        
+        self.logBox.AppendText("\nWARNING: This has not been implemented.\n\n")
         
     def quality_control(self):
         self.logBox.AppendText("#############################\nImplementing Quality Control\n#############################\n") 
@@ -297,9 +319,8 @@ class Archiver(wx.Frame):
         self.logBox.AppendText("Using Structure Similarity (SSIM) Index to verify lossless conversion.\nPlease wait.\n")
         file.write("Using Structure Similarity (SSIM) Index to verify lossless conversion.\nPlease wait.\n")
         
-        #runSSIM(self.textBox1.GetValue()+"/original/", self.textBox1.GetValue()+"/copy/")
+        runSSIM(self.textBox1.GetValue()+"/original/", self.textBox1.GetValue()+"/copy/")
         self.logBox.AppendText("Quality Check Complete.\n\n")
-
         
     def textBoxValidator(self):
         # check if textbox is empty

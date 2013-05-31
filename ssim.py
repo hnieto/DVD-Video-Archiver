@@ -5,7 +5,7 @@ Created on 21 nov. 2011
 '''
 
 #Possible use of matplotlib from http://http://matplotlib.sourceforge.net/
-from pylab import * 
+#from pylab import * 
 import matplotlib.pyplot as plt
 
 #More imports
