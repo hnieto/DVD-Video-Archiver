@@ -19,6 +19,9 @@ scripts to interface with the [SSIM](http://www.sciencedirect.com/science/articl
 provide the correct flags to ffmpeg and [HandBrakeCLI](https://trac.handbrake.fr/wiki/CLIGuide). These tools will produce a [Matroska](http://www.matroska.org/) production quality file
 and an MP4 streaming copy.
 
+**IMPORTANT**
+After downloading HandBrakeCLI from http://handbrake.fr/downloads2.php, make sure you add the application to your PATH. 
+
 
 ## SSIM
 

@@ -5,19 +5,19 @@ Created on 21 nov. 2011
 '''
 
 #Possible use of matplotlib from http://http://matplotlib.sourceforge.net/
-#from pylab import * 
+from pylab import *
 import matplotlib.pyplot as plt
 
 #More imports
-import Image
+from PIL import Image
+from PIL import ImageOps
 import numpy
-import ImageOps
 
-import numpy
 import scipy.ndimage
 from numpy.ma.core import exp
 from scipy.constants.constants import pi
-
+import os
+import sys
 
 def runSSIM(folder1, folder2):
     listing1 = os.listdir(folder1)
@@ -31,19 +31,19 @@ def runSSIM(folder1, folder2):
     for infile in listing1:
 
         #First image 
-        imgRefMat=build_mat_from_grayscale_image(sys.argv[1]+"/"+infile)
+        imgRefMat=build_mat_from_grayscale_image(folder1+"/"+infile)
         (w,h) = (imgRefMat.shape[0],imgRefMat.shape[1])
         
         #First subplot
-        figure()
-        subplot(121)
+        plt.figure()
+        plt.subplot(121)
         plt.imshow(imgRefMat, cmap=cm.gray, hold=True)
         
         #Second image
-        imgOutMat=build_mat_from_grayscale_image(sys.argv[2]+"/"+listing2[cnt])
+        imgOutMat=build_mat_from_grayscale_image(folder2+"/"+listing2[cnt])
         
         #Second subplot
-        subplot(122)
+        plt.subplot(122)
         plt.imshow(imgOutMat, cmap=cm.gray, hold=True)
        # plt.show()
         
