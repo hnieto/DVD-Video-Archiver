@@ -22,6 +22,7 @@ from ssim import runSSIM
 txtFile = ""
 xmlFile = ""
 iso = ""
+dd_command = "dd if=/dev/disk1 of="
 ffmpeg_command = "ffmpeg -i "
 handbrake_command = "HandBrakeCLI -i "
 
@@ -136,9 +137,10 @@ class Archiver(wx.Frame):
             self.extractMetaDataToTxt()
 
             if self.makeISO.GetValue():
-                # to do
-                # need to add dvd decrypting
-                self.generate_iso_command()
+                '''
+                IMPORTANT: must install libdvdread and libdvdcss to rip encrypted DVD
+                '''
+                self.generate_dd_command()
                 self.create_iso()
             
             if self.makeMKV.GetValue():
@@ -302,7 +304,7 @@ class Archiver(wx.Frame):
         global handbrake_command
         
         file = open(txtFile, "a")
-        file.write("#####################################\nGenerating HandBrake Command\n#####################################\n\n")
+        file.write("#####################################\nGenerating HandBrake Command\n#####################################\n")
         self.logBox.AppendText("#############################\nGenerating HandBrake Command\n#############################\n") 
         handbrake_command += iso + " -o " + self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".mp4"
 
@@ -313,15 +315,19 @@ class Archiver(wx.Frame):
         
         file.close()
         
-    def generate_iso_command(self):
-        global iso_command
+    ''' used to convert DVD to iso '''
+    def generate_dd_command(self):
+        global dd_command
         
         file = open(txtFile, "a")
-        file.write("\n#####################################\nGenerating ISO Command\n#####################################\n\n")
-        file.write("WARNING: This has not been implemented.\n\n")
+        file.write("\n#####################################\nGenerating DD Command\n#####################################\n")
+        self.logBox.AppendText("\n#############################\nGenerating ISO Command\n#############################\n")
+        dd_command += self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".iso"
         
-        self.logBox.AppendText("\n#############################\nGenerating ISO Command\n#############################\n\n")
-        self.logBox.AppendText("WARNING: This has not been implemented.\n\n")
+        file.write("\nDD command complete.\n")
+        file.write("DD command = " + dd_command + "\n")
+        self.logBox.AppendText("\nDD command complete.\n")
+        self.logBox.AppendText("DD command = " + dd_command + "\n")
         
         file.close()
         
@@ -341,6 +347,30 @@ class Archiver(wx.Frame):
                 
         file.write("\nMatroska Successfully Created.\n")
         self.logBox.AppendText("\nMatroska Successfully Created.\n")
+        
+        file.write("\nCreating MD5 checksum.\n")
+        self.logBox.AppendText("\nCreating MD5 checksum.\n")
+        md5_command = "openssl md5 " + self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".mkv"
+        md5 = subprocess.Popen(md5_command, shell=True, stdout=subprocess.PIPE)
+
+        # log to gui and txt file
+        for line in md5.stdout:
+            wx.Yield()
+            file.write(line)
+            self.logBox.AppendText(line)
+        md5.wait()
+        
+        file.write("\nCreating SHA-1 checksum.\n")
+        self.logBox.AppendText("\nCreating SHA-1 checksum.\n")
+        sha1_command = "openssl sha1 " + self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".mkv"
+        sha1 = subprocess.Popen(sha1_command, shell=True, stdout=subprocess.PIPE)
+
+        # log to gui and txt file
+        for line in sha1.stdout:
+            wx.Yield()
+            file.write(line)
+            self.logBox.AppendText(line)
+        sha1.wait()        
         
         file.close()
         
@@ -372,12 +402,61 @@ class Archiver(wx.Frame):
     def create_iso(self):
         file = open(txtFile, "a")
         file.write("\n#############################\nCreating ISO File\n#############################\n")
-        self.logBox.AppendText("#############################\nCreating ISO File\n#############################\n")
+        self.logBox.AppendText("\n#############################\nCreating ISO File\n#############################\n")
         
-        file.write("\nWARNING: This has not been implemented.\n\n")
-        self.logBox.AppendText("\nWARNING: This has not been implemented.\n\n")
+        file.write("\nUnmounting DVD.\n")
+        self.logBox.AppendText("\nUnmounting DVD.\n")
+        unmount = subprocess.Popen("diskutil unmountDisk /dev/disk1", shell=True, stdout=subprocess.PIPE)
+        
+        # log to gui and txt file
+        for line in unmount.stdout:
+            wx.Yield()
+            file.write(line)
+            self.logBox.AppendText(line)
+        unmount.wait()
+        
+        file.write("\nCreating Disc Image.\n")
+        self.logBox.AppendText("\nCreating Disc Image.\n")
+        procDD = subprocess.Popen(dd_command, shell=True, stdout=subprocess.PIPE)
+
+        # log to gui and txt file
+        for line in procDD.stdout:
+            wx.Yield()
+            file.write(line)
+            self.logBox.AppendText(line)
+        procDD.wait()
+        
+        file.write("ISO Successfully Created.\n")
+        self.logBox.AppendText("ISO Successfully Created.\n")
+        
+        file.write("\nCreating MD5 checksum.\n")
+        self.logBox.AppendText("\nCreating MD5 checksum.\n")
+        md5_command = "openssl md5 " + self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".iso"
+        md5 = subprocess.Popen(md5_command, shell=True, stdout=subprocess.PIPE)
+
+        # log to gui and txt file
+        for line in md5.stdout:
+            wx.Yield()
+            file.write(line)
+            self.logBox.AppendText(line)
+        md5.wait()
+        
+        file.write("\nCreating SHA-1 checksum.\n")
+        self.logBox.AppendText("\nCreating SHA-1 checksum.\n")
+        sha1_command = "openssl sha1 " + self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".iso"
+        sha1 = subprocess.Popen(sha1_command, shell=True, stdout=subprocess.PIPE)
+
+        # log to gui and txt file
+        for line in sha1.stdout:
+            wx.Yield()
+            file.write(line)
+            self.logBox.AppendText(line)
+        sha1.wait()
         
         file.close()
+        
+        # restore stdout to normal
+        sys.stdout = sys.__stdout__
         
     def quality_control(self):
         file = open(txtFile, "a")
@@ -422,10 +501,14 @@ class Archiver(wx.Frame):
         file.write("\nUsing Structure Similarity (SSIM) Index to verify lossless conversion.\nPlease wait.\n")
         self.logBox.AppendText("\nUsing Structure Similarity (SSIM) Index to verify lossless conversion.\nPlease wait.\n")
         
-        runSSIM(self.textBox1.GetValue()+"/original/", self.textBox1.GetValue()+"/copy/")
+        (averageSSIM, standardDeviation) = runSSIM(self.textBox1.GetValue()+"/original/", self.textBox1.GetValue()+"/copy/")
+        file.write("\nAverage SSIM = " + str(averageSSIM))
+        file.write("\nStandard Deviation = " + str(standardDeviation) + "\n")
+        self.logBox.AppendText("\nAverage SSIM = " + str(averageSSIM))
+        self.logBox.AppendText("\nStandard Deviation = " + str(standardDeviation) + "\n")
         
         file.write("\nRemoving temporary folders.\n")
-        self.logBox.AppendText("Removing temporary folders.\n")
+        self.logBox.AppendText("\nRemoving temporary folders.\n")
         
         subprocess.call(['rm','-r',self.textBox1.GetValue() + '/original'])
         subprocess.call(['rm','-r',self.textBox1.GetValue() + '/copy'])
@@ -496,25 +579,26 @@ class Archiver(wx.Frame):
                 return False
             
         # check if textbox is empty
-        if len(self.textBox4.GetValue()) == 0 and (self.makeMKV.GetValue() or self.makeMP4.GetValue()):
-            wx.MessageBox("Please select a .iso file. It is required to create MKV or MP4.", "Error")
-            self.textBox4.SetBackgroundColour("pink")
-            self.textBox4.SetFocus()
-            self.textBox4.Refresh()
-            return False
-        else:
-            self.textBox4.SetBackgroundColour(wx.SystemSettings_GetColour(wx.SYS_COLOUR_WINDOW))
-            self.textBox4.Refresh()
-
-            # check if directory exists
-            if not os.path.exists(self.textBox4.GetValue()):
-                wx.MessageBox("The iso file does not exist.\nVerify your spelling and format or use the directory dialog.", "Error")
+        if self.makeMKV.GetValue() or self.makeMP4.GetValue():
+            if len(self.textBox4.GetValue()) == 0:
+                wx.MessageBox("Please select a .iso file. It is required to create MKV or MP4.", "Error")
                 self.textBox4.SetBackgroundColour("pink")
                 self.textBox4.SetFocus()
                 self.textBox4.Refresh()
                 return False
             else:
-                iso = self.textBox4.GetValue()
+                self.textBox4.SetBackgroundColour(wx.SystemSettings_GetColour(wx.SYS_COLOUR_WINDOW))
+                self.textBox4.Refresh()
+
+                # check if directory exists
+                if not os.path.exists(self.textBox4.GetValue()):
+                    wx.MessageBox("The iso file does not exist.\nVerify your spelling and format or use the directory dialog.", "Error")
+                    self.textBox4.SetBackgroundColour("pink")
+                    self.textBox4.SetFocus()
+                    self.textBox4.Refresh()
+                    return False
+                else:
+                    iso = self.textBox4.GetValue()
              
         return True
         

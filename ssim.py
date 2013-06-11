@@ -64,8 +64,7 @@ def runSSIM(folder1, folder2):
         devSum = devSum + temp
 
     standardDeviation = devSum/(cnt -1)
-    print "averageSSIM=", averageSSIM
-    print "standardDeviation=", standardDeviation
+    return (averageSSIM, standardDeviation)
 
 '''
 Get 2D matrix from an image file, possibly displayed with matplotlib 
