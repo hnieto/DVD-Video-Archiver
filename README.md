@@ -12,9 +12,8 @@ This is still a work in progress. Please read this document in its entirety to g
 
 ## High-Level Procedure Description
 
-The process is launched by opening a terminal (Applications > Utilities > Terminal) and running the following commands:
-	`cd /Path/To/DVD/Archiver/`
-	`python dvdArchiver.py`
+The process is launched by opening a terminal (Applications > Utilities > Terminal) and running the following command:
+	`cd /Path/To/DVD/Archiver/ && python dvdArchiver.py`
 
 
 The script will extract the DVD's technical information using [MediaInfo](http://mediainfo.sourceforge.net/en). The ouput is then logged as XML and TXT in a user specified directory. The application parses the technical characteristics of the work of art from the XML to provide the correct flags to ffmpeg and [HandBrakeCLI](https://trac.handbrake.fr/wiki/CLIGuide). These tools will produce a [Matroska](http://www.matroska.org/) production quality file and an MP4 streaming copy, respectively. The `dd` command line utility is used to create an ISO disk image from the DVD. The application allows the user to choose one or all of the preservation files (ISO, MKV, MP4) to be created during one execution cycle. An ISO file **must** be provided if the user wishes to generate an MKV or MP4, otherwise this text box can be left blank.    
