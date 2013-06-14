@@ -18,7 +18,7 @@ The scripts and corresponding python libraries have been packaged into a standal
 
 ### HandBrakeCLI
 
-[HandbrakeCLI](http://mediainfo.sourceforge.net/en/Download/Mac_OS) is a general-purpose, free, open-source, cross-platform, multithreaded video transcoder command-line tool. This application requires HandBrakeCLI to convert an ISO to a streaming MP4 file. Once installed, HandBrakeCLI must also be added to your $PATH. To do so, 
+[HandbrakeCLI](http://handbrake.fr/downloads2.php) is a general-purpose, free, open-source, cross-platform, multithreaded video transcoder command-line tool. This application requires HandBrakeCLI to convert an ISO to a streaming MP4 file. Once installed, HandBrakeCLI must also be added to your $PATH. To do so, 
 
 * Open a terminal window (Applications > Utilities > Terminal)   
 * Edit your `.profile` with your favorite editor (ie. run `vi ~/.profile`)    
@@ -27,6 +27,9 @@ The scripts and corresponding python libraries have been packaged into a standal
 * reload your `.profile` by running `source ~/.profile`  
 * verify your changes by running `echo $PATH`  
 * finally, type `HandBrakeCLI --help`. If you see the help options for HandBrakeCLI, then you've successfully setup the tool   
+
+**IMPORTANT**
+If you are using a version of Mac OS X that is less than 10.6, use this download [link]() instead.
 
 ### FFMPEG
 
