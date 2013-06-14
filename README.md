@@ -23,7 +23,7 @@ The scripts and corresponding python libraries have been packaged into a standal
 * Open a terminal window (Applications > Utilities > Terminal)   
 * Edit your `.profile` with your favorite editor (ie. run `vi ~/.profile`)    
 * find the line that starts with `export PATH=` and change it to `export PATH=/folder/containing/handbrakecli/:$PATH`  
-* close your editor (if using vi, type `:wq!`  
+* close your editor (if using vi, type `:wq!`)   
 * reload your `.profile` by running `source ~/.profile`  
 * verify your changes by running `echo $PATH`  
 * finally, type `HandBrakeCLI --help`. If you see the help options for HandBrakeCLI, then you've successfully setup the tool   
@@ -39,10 +39,10 @@ The scripts and corresponding python libraries have been packaged into a standal
 
 ## How To Run
 
-Once `dvdArchiver.zip` has been extracted, you can run the application directly from the terminal (Applications > Utilities > Terminal) with:
+Once `dvdArchiver.zip` has been extracted, you can run the application directly from the terminal (Applications > Utilities > Terminal) with:   
 	`./path/to/extracted/dvdArchiver.app/Contents/MacOS/dvdArchiver`
 
-You can also launch the application by double-clicking it. 
+You can also launch the application by double-clicking it.     
 **WARNING**
 This is buggy. The GUI will open but the command line calls for MediaInfo, FFMPEG, and HandBrakeCLI do not get executed. I will work on gettting this fixed ASAP but in the meantime just run the application directly from the terminal.
 
@@ -50,34 +50,34 @@ This is buggy. The GUI will open but the command line calls for MediaInfo, FFMPE
 ## Create ISO
 
 Make sure your DVD is mounted. Check the `Create ISO` option and fill in the following text boxes in the GUI:
-	* Output Directory  
-	* Output File Name  
-	* DVD Directory  
+* Output Directory  
+* Output File Name  
+* DVD Directory  
 
-The `dd` command line utility is then used to create an ISO disk image from the DVD. An MD5 and SHA-1 checksum are produced once the ISO has been created. There is no need to fill in the `ISO FIle` text box since this information will not be used during the ISO creation process.  
+The `dd` command line utility is then used to create an ISO disk image from the DVD. An MD5 and SHA-1 checksum are produced once the ISO has been created. There is no need to fill in the `ISO FIle` text box since this information will not be used during the ISO creation process.    
 
 **IMPORTANT**   
-If the master DVD is encrypted, `libdvdread` and `libdvdcss` must be installed before attempting to produce a SIP using this application. You can download the `libreadcss.pkg` from [here](http://download.videolan.org/pub/videolan/libdvdcss/1.2.11/macosx/). This application is only intended to be used with legally purchased DVDs.  
+If the master DVD is encrypted, `libdvdread` and `libdvdcss` must be installed before attempting to produce a SIP using this application. You can download the `libdvdcss.pkg` from [here](http://download.videolan.org/pub/videolan/libdvdcss/1.2.11/macosx/). This application is only intended to be used with legally purchased DVDs.  
 
 
 ## Create MKV
 
-To convert from an ISO disc image to an MKV container, make sure to mount the ISO first by double clicking it. Once mounted, select `Create Matroska` from the `Optional Attributes` section and fill in the following text boxes:
-	* Output Directory    
-	* Output File Name   
-	* DVD Directory    
-	* ISO File   
+To convert from an ISO disc image to an MKV container, make sure to mount the ISO first by double clicking it. Once mounted, select `Create Matroska` from the `Optional Attributes` section and fill in the following text boxes:    
+* Output Directory    
+* Output File Name   
+* DVD Directory    
+* ISO File   
 
-The `DVD Directory` is used by MediaInfo to extract the DVD metadata and create an XML file. FFMPEG will then use this technical data and `ISO File` to generate an Matroska file more accurately. An MD5 and SHA-1 checksum are produced once the MKV has been created.
+The `DVD Directory` is used by MediaInfo to extract the DVD metadata and create an XML file. FFMPEG will then use this technical data and `ISO File` to generate a Matroska file more accurately. An MD5 and SHA-1 checksum are produced once the MKV has been created.
 
 
 ## Create MP4
 
-To convert from an ISO to a streaming MP4 file, make sure to mount the ISO first by double clicking it. Once mounted, select `Create MP4` from the `Optional Attributes` section and fill in the following text boxes:
-  * Output Directory        
-  * Output File Name   
-  * DVD Directory        
-  * ISO File
+To convert from an ISO to a streaming MP4 file, make sure to mount the ISO first by double clicking it. Once mounted, select `Create MP4` from the `Optional Attributes` section and fill in the following text boxes:   
+* Output Directory        
+* Output File Name   
+* DVD Directory        
+* ISO File
 
 Although MediaInfo will extract the DVD's metadata using the `DVD Directory`, it will not be used by HandBrakeCLI to perform the conversion. In this scenario, the information extracted by MediaInfo is purely for logging purposes.    
 
