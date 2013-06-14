@@ -29,7 +29,7 @@ The scripts and corresponding python libraries have been packaged into a standal
 * finally, type `HandBrakeCLI --help`. If you see the help options for HandBrakeCLI, then you've successfully setup the tool   
 
 **IMPORTANT**
-If you are using Mac OS X 10.5, download HandBrakeCLI from [here](http://sourceforge.net/projects/handbrake/files/0.9.9/HandBrake-0.9.9-MacOSX.6_CLI_x86_64.dmg/download) instead.
+If you are using Mac OS X 10.5, download HandBrakeCLI from [here](http://iweb.dl.sourceforge.net/project/handbrake/0.9.9/HandBrake-0.9.9-MacOSX.6_CLI_x86_64.dmg) instead.
 
 ### FFMPEG
 
