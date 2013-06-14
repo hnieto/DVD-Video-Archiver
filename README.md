@@ -39,15 +39,24 @@ The scripts and corresponding python libraries have been packaged into a standal
 
 ## How To Run
 
-Once `dvdArchiver.zip` has been extracted, you can run the application directly from the terminal (Applications > Utilities > Terminal) with:   
+Once `dvdArchiver.zip` has been extracted, you can run the application in one of the following two ways:
+
+### From Termainl
+Open a terminal window (Applications > Utilities > Terminal) and run:   
 	`./path/to/extracted/dvdArchiver.app/Contents/MacOS/dvdArchiver`
 
-You can also launch the application by double-clicking it.     
+### Double Click
+You can also launch the application by double-clicking on it.   
+
 **WARNING**   
 This is buggy. The GUI will open but the command line calls for MediaInfo, FFMPEG, and HandBrakeCLI do not get executed. I will work on gettting this fixed ASAP but in the meantime just run the application directly from the terminal.
 
 
-## Create ISO
+## Usage   
+
+This appliction allows the user to create up to three different preservation files during one execution cycle. The following sections will describe which files can be created and how.
+
+### Create ISO
 
 Make sure your DVD is mounted. Check the `Create ISO` option and fill in the following text boxes in the GUI:
 * Output Directory  
@@ -59,8 +68,7 @@ The `dd` command line utility is then used to create an ISO disk image from the 
 **IMPORTANT**   
 If the master DVD is encrypted, `libdvdread` and `libdvdcss` must be installed before attempting to produce a SIP using this application. You can download the `libdvdcss.pkg` from [here](http://download.videolan.org/pub/videolan/libdvdcss/1.2.11/macosx/). This application is only intended to be used with legally purchased DVDs.  
 
-
-## Create MKV
+### Create MKV
 
 To convert from an ISO disc image to an MKV container, make sure to mount the ISO first by double clicking it. Once mounted, select `Create Matroska` from the `Optional Attributes` section and fill in the following text boxes:    
 * Output Directory    
@@ -70,8 +78,7 @@ To convert from an ISO disc image to an MKV container, make sure to mount the IS
 
 The `DVD Directory` is used by MediaInfo to extract the DVD metadata and create an XML file. FFMPEG will then use this technical data and `ISO File` to generate a Matroska file more accurately. An MD5 and SHA-1 checksum are produced once the MKV has been created.
 
-
-## Create MP4
+### Create MP4
 
 To convert from an ISO to a streaming MP4 file, make sure to mount the ISO first by double clicking it. Once mounted, select `Create MP4` from the `Optional Attributes` section and fill in the following text boxes:   
 * Output Directory        
@@ -119,6 +126,9 @@ In order to ensure that the preservation master copy has been transcoded correct
 * [MediaInfo](http://mediainfo.sourceforge.net/en)
 * [FFMPEG](http://ffmpeg.org/ffmpeg.html)
 * [HandBrakeCLI](https://trac.handbrake.fr/wiki/CLIGuide)
+
+**IMPORTANT**
+The installation directory of the these three programs is independent of this application.
 
 
 ## To Do
