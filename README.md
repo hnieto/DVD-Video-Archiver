@@ -43,7 +43,7 @@ Once `dvdArchiver.zip` has been extracted, you can run the application directly 
 	`./path/to/extracted/dvdArchiver.app/Contents/MacOS/dvdArchiver`
 
 You can also launch the application by double-clicking it.     
-**WARNING**
+**WARNING**   
 This is buggy. The GUI will open but the command line calls for MediaInfo, FFMPEG, and HandBrakeCLI do not get executed. I will work on gettting this fixed ASAP but in the meantime just run the application directly from the terminal.
 
 
