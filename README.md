@@ -10,17 +10,76 @@ in a high performance storage (HPC) resource at the [Texas Advanced Computing Ce
 This is still a work in progress. Please read this document in its entirety to get a complete understanding of what has and has not been implemented. Thank you.
 
 
-## High-Level Procedure Description
+## Setting Up
 
-The process is launched by opening a terminal (Applications > Utilities > Terminal) and running the following command:
-	`cd /Path/To/DVD/Archiver/ && python dvdArchiver.py`
+### Python
+
+The scripts and corresponding python libraries have been packaged into a standalone `.app` Mac OS X application with the help of [py2app](http://wiki.python.org/moin/MacPython/py2app). The user does not have to worry about installing any Python modules or modifying their existing Python environment. 
+
+### HandBrakeCLI
+
+[HandbrakeCLI](http://mediainfo.sourceforge.net/en/Download/Mac_OS) is a general-purpose, free, open-source, cross-platform, multithreaded video transcoder command-line tool. This application requires HandBrakeCLI to convert an ISO to a streaming MP4 file. Once installed, HandBrakeCLI must also be added to your $PATH. To do so, 
+
+* Open a terminal window (Applications > Utilities > Terminal)   
+* Edit your `.profile` with your favorite editor (ie. run `vi ~/.profile`)    
+* find the line that starts with `export PATH=` and change it to `export PATH=/folder/containing/handbrakecli/:$PATH`  
+* close your editor (if using vi, type `:wq!`  
+* reload your `.profile` by running `source ~/.profile`  
+* verify your changes by running `echo $PATH`  
+* finally, type `HandBrakeCLI --help`. If you see the help options for HandBrakeCLI, then you've successfully setup the tool   
+
+### FFMPEG
+
+[FFMPEG](http://ffmpeg.org/ffmpeg.html) is a cross-platform solution to record, convert and stream audio and video. This application uses FFMPEG to convert an ISO to an MKV high quality container. There are serveral ways you can install FFMPEG. You can either download the source and compile it yourself or use a package manager like [Homebrew](http://mxcl.github.io/homebrew/) to take care of the installation for you. Both of these options are described in [here](http://ffmpeg.org/trac/ffmpeg/wiki/MacOSXCompilationGuide).
+
+### MediaInfo
+
+[MediaInfo](http://mediainfo.sourceforge.net/en/Download/Mac_OS) is a free and open-source program that displays technical information about media files. This application uses MediaInfo to extract information from a DVD into a TXT and XML file. This metadata is later parsed for specific technical information and used to generate the FFMPEG command that will ultimately create an MKV container. MediaInfo can be downloaded as a `.dmg` from the link above and then installed by following the on-screen instructions.
 
 
-The script will extract the DVD's technical information using [MediaInfo](http://mediainfo.sourceforge.net/en). The ouput is then logged as XML and TXT in a user specified directory. The application parses the technical characteristics of the work of art from the XML to provide the correct flags to ffmpeg and [HandBrakeCLI](https://trac.handbrake.fr/wiki/CLIGuide). These tools will produce a [Matroska](http://www.matroska.org/) production quality file and an MP4 streaming copy, respectively. The `dd` command line utility is used to create an ISO disk image from the DVD. The application allows the user to choose one or all of the preservation files (ISO, MKV, MP4) to be created during one execution cycle. An ISO file **must** be provided if the user wishes to generate an MKV or MP4, otherwise this text box can be left blank.    
+## How To Run
+
+Once `dvdArchiver.zip` has been extracted, you can run the application directly from the terminal (Applications > Utilities > Terminal) with:
+	`./path/to/extracted/dvdArchiver.app/Contents/MacOS/dvdArchiver`
+
+You can also launch the application by double-clicking it. 
+**WARNING**
+This is buggy. The GUI will open but the command line calls for MediaInfo, FFMPEG, and HandBrakeCLI do not get executed. I will work on gettting this fixed ASAP but in the meantime just run the application directly from the terminal.
+
+
+## Create ISO
+
+Make sure your DVD is mounted. Check the `Create ISO` option and fill in the following text boxes in the GUI:
+	* Output Directory  
+	* Output File Name  
+	* DVD Directory  
+
+The `dd` command line utility is then used to create an ISO disk image from the DVD. An MD5 and SHA-1 checksum are produced once the ISO has been created. There is no need to fill in the `ISO FIle` text box since this information will not be used during the ISO creation process.  
 
 **IMPORTANT**   
-* After downloading HandBrakeCLI from http://handbrake.fr/downloads2.php, make sure you add the application to your PATH.   
-* If the master DVD is encrypted, `libdvdread` and `libdvdcss` must be installed before attempting to produce a SIP using this application. 
+If the master DVD is encrypted, `libdvdread` and `libdvdcss` must be installed before attempting to produce a SIP using this application. You can download the `libreadcss.pkg` from [here](http://download.videolan.org/pub/videolan/libdvdcss/1.2.11/macosx/). This application is only intended to be used with legally purchased DVDs.  
+
+
+## Create MKV
+
+To convert from an ISO disc image to an MKV container, make sure to mount the ISO first by double clicking it. Once mounted, select `Create Matroska` from the `Optional Attributes` section and fill in the following text boxes:
+	* Output Directory    
+	* Output File Name   
+	* DVD Directory    
+	* ISO File   
+
+The `DVD Directory` is used by MediaInfo to extract the DVD metadata and create an XML file. FFMPEG will then use this technical data and `ISO File` to generate an Matroska file more accurately. An MD5 and SHA-1 checksum are produced once the MKV has been created.
+
+
+## Create MP4
+
+To convert from an ISO to a streaming MP4 file, make sure to mount the ISO first by double clicking it. Once mounted, select `Create MP4` from the `Optional Attributes` section and fill in the following text boxes:
+  * Output Directory        
+  * Output File Name   
+  * DVD Directory        
+  * ISO File
+
+Although MediaInfo will extract the DVD's metadata using the `DVD Directory`, it will not be used by HandBrakeCLI to perform the conversion. In this scenario, the information extracted by MediaInfo is purely for logging purposes.    
 
 
 ## SSIM
@@ -57,10 +116,6 @@ In order to ensure that the preservation master copy has been transcoded correct
 
 ## Requirements
 
-* [Python](http://www.python.org/) 
-* [NumPy](http://www.numpy.org/)
-* [SciPy](http://www.scipy.org/)
-* [Matplotlib](http://matplotlib.org/)
 * [MediaInfo](http://mediainfo.sourceforge.net/en)
 * [FFMPEG](http://ffmpeg.org/ffmpeg.html)
 * [HandBrakeCLI](https://trac.handbrake.fr/wiki/CLIGuide)
@@ -69,5 +124,4 @@ In order to ensure that the preservation master copy has been transcoded correct
 ## To Do
 
 * Parallelize the workflow to take advantage of HPC system resources for large video collections
-* Create single package with Graphical User Interface
 * Improve logging to facilitate metadata comparison 

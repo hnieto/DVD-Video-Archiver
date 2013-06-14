@@ -45,7 +45,7 @@ class Archiver(wx.Frame):
         self.label1 = wx.StaticText(self.panel, label="DVD Video Archiver")
         self.gridSizer.Add(self.label1, pos=(0, 0), flag=wx.TOP|wx.LEFT|wx.BOTTOM, border=15)
 
-        self.icon = wx.StaticBitmap(self.panel, bitmap=wx.Bitmap('icon.png'))
+        self.icon = wx.StaticBitmap(self.panel, bitmap=wx.Bitmap(os.path.join(os.path.dirname(__file__), 'icon.png')))
         self.gridSizer.Add(self.icon, pos=(0, 4), flag=wx.TOP|wx.RIGHT|wx.ALIGN_RIGHT, border=5)
 
         self.divider = wx.StaticLine(self.panel)
