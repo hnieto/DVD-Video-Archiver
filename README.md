@@ -14,7 +14,7 @@ This is still a work in progress. Please read this document in its entirety to g
 
 ### Python
 
-The scripts and corresponding python libraries have been packaged into a standalone `.app` Mac OS X application with the help of [py2app](http://wiki.python.org/moin/MacPython/py2app). The user does not have to worry about installing any Python modules or modifying their existing Python environment. 
+The scripts and corresponding python libraries have been packaged into a standalone `.app` Mac OS X application with the help of [py2app](http://wiki.python.org/moin/MacPython/py2app). The user does **not** have to worry about installing any Python modules or modifying their existing Python environment. 
 
 ### HandBrakeCLI
 
@@ -41,9 +41,9 @@ The scripts and corresponding python libraries have been packaged into a standal
 
 Once `dvdArchiver.zip` has been extracted, you can run the application in one of the following two ways:
 
-### From Termainl
+### From Terminal 
 Open a terminal window (Applications > Utilities > Terminal) and run:   
-	`./path/to/extracted/dvdArchiver.app/Contents/MacOS/dvdArchiver`
+	`./path/to/extracted/program/dvdArchiver.app/Contents/MacOS/dvdArchiver`
 
 ### Double Click
 You can also launch the application by double-clicking on it.   
