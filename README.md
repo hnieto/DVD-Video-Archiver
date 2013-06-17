@@ -28,7 +28,7 @@ The scripts and corresponding python libraries have been packaged into a standal
 * verify your changes by running `echo $PATH`  
 * finally, type `HandBrakeCLI --help`. If you see the help options for HandBrakeCLI, then you've successfully setup the tool   
 
-**IMPORTANT**
+**IMPORTANT**   
 If you are using Mac OS X 10.5, download HandBrakeCLI from [here](http://sourceforge.net/projects/handbrake/files/0.9.5/HandBrake-0.9.5-MacOSX.5_CLI_x86_64.dmg/download) instead.
 
 ### FFMPEG
@@ -130,7 +130,7 @@ In order to ensure that the preservation master copy has been transcoded correct
 * [FFMPEG](http://ffmpeg.org/ffmpeg.html)
 * [HandBrakeCLI](https://trac.handbrake.fr/wiki/CLIGuide)
 
-**IMPORTANT**
+**IMPORTANT**   
 The installation directory of the these three programs is independent of this application.
 
 
