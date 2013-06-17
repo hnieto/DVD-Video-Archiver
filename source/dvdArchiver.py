@@ -110,10 +110,7 @@ class Archiver(wx.Frame):
         self.gridSizer.Add(self.help, pos=(19, 1), flag=wx.LEFT, border=-50)
 
         self.archive = wx.Button(self.panel, label="Archive")
-        self.gridSizer.Add(self.archive, pos=(19, 3))
-
-        self.cancel = wx.Button(self.panel, label="Cancel")
-        self.gridSizer.Add(self.cancel, pos=(19, 4), span=(1, 1), flag=wx.BOTTOM|wx.RIGHT, border=5)
+        self.gridSizer.Add(self.archive, pos=(19, 4), span=(1,1), flag=wx.BOTTOM|wx.RIGHT, border=5)
 
         self.gridSizer.AddGrowableCol(2)
         
