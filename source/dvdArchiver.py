@@ -22,7 +22,8 @@ from ssim import runSSIM
 txtFile = ""
 xmlFile = ""
 iso = ""
-dd_command = "dd if=/dev/disk1 of="
+mount_dir = ""
+dd_command = ""
 ffmpeg_command = "ffmpeg -i "
 handbrake_command = "HandBrakeCLI -i "
 
@@ -315,11 +316,19 @@ class Archiver(wx.Frame):
     ''' used to convert DVD to iso '''
     def generate_dd_command(self):
         global dd_command
+        global mount_dir
         
         file = open(txtFile, "a")
         file.write("\n#####################################\nGenerating DD Command\n#####################################\n")
         self.logBox.AppendText("\n#############################\nGenerating ISO Command\n#############################\n")
-        dd_command += self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".iso"
+        
+        # find mount directory for DVD
+        cmd = "mount | grep " + self.textBox3.GetValue() + " | awk '{print $1}'"
+        p1 = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
+        mount_dir = p1.stdout.read().rstrip('\n')
+        
+        # construct dd_command using mount point found above
+        dd_command = "dd if=" + mount_dir + " of=" + self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".iso"
         
         file.write("\nDD command complete.\n")
         file.write("DD command = " + dd_command + "\n")
