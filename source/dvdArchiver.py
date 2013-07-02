@@ -16,11 +16,10 @@ import re
 import wx
 import subprocess
 from time import strftime
+from datetime import datetime
 import xml.etree.ElementTree as ET
 from ssim import runSSIM
 
-txtFile = ""
-xmlFile = ""
 iso = ""
 mount_dir = ""
 dd_command = ""
@@ -87,7 +86,7 @@ class Archiver(wx.Frame):
         self.gridSizer.Add(self.button3, pos=(5, 4), flag=wx.TOP|wx.RIGHT, border=5)
 
         # check boxes
-        self.staticBox = wx.StaticBox(self.panel, label="Optional Attributes")
+        self.staticBox = wx.StaticBox(self.panel, label="Preservation File Types")
         self.boxSizer = wx.StaticBoxSizer(self.staticBox, wx.VERTICAL)
         self.makeISO = wx.CheckBox(self.panel, label="Create ISO")
         self.makeMKV = wx.CheckBox(self.panel, label="Create Matroska")
@@ -121,104 +120,211 @@ class Archiver(wx.Frame):
         self.button1.Bind(wx.EVT_BUTTON, self.get_output_dir)
         self.button2.Bind(wx.EVT_BUTTON, self.get_dvd_dir)
         self.button3.Bind(wx.EVT_BUTTON, self.get_iso_file)
+        self.makeISO.Bind(wx.EVT_CHECKBOX, self.toggle_visibility)
+        self.makeMKV.Bind(wx.EVT_CHECKBOX, self.toggle_visibility)
+        self.makeMP4.Bind(wx.EVT_CHECKBOX, self.toggle_visibility)
         self.about.Bind(wx.EVT_BUTTON, self.open_about)
         self.help.Bind(wx.EVT_BUTTON, self.open_help)
         self.archive.Bind(wx.EVT_BUTTON, self.run_app)
-        
                 
-    def run_app(self, event): 
-        global iso
-          
+    def run_app(self, event):           
         # validate GUI inputs
-        if self.textBoxValidator() and self.checkBoxValidator():
-            self.logBox.AppendText("\nStarting Archive Process")
-            self.extractMetaDataToTxt()
+        if self.validator():
+            self.logBox.AppendText("\nStarting Archive Process\n")
 
             if self.makeISO.GetValue():
-                '''
-                IMPORTANT: must install libdvdread and libdvdcss to rip encrypted DVD
-                '''
+                start_time1 = datetime.now()
+                self.logBox.AppendText("\nCREATING ISO\n")
+                os.makedirs(self.textBox1.GetValue() + "/iso")
+                self.extract_dvd_metadata_xml(self.textBox1.GetValue() + "/iso/dvd.xml", self.textBox3.GetValue()) 
+                self.extract_dvd_metadata_txt(self.textBox1.GetValue() + "/iso/dvd.txt", self.textBox3.GetValue())
                 self.generate_dd_command()
                 self.create_iso()
-            
+                self.extract_iso_metadata_xml(self.textBox1.GetValue() + "/iso/iso.xml") 
+                self.extract_iso_metadata_txt(self.textBox1.GetValue() + "/iso/iso.txt")
+                self.logBox.AppendText(" Time Elapsed = " + str(datetime.now()-start_time1) + "\n")
+                            
             if self.makeMKV.GetValue():
-                self.extractMetaDataToXML()
-                self.generate_ffmpeg_command()
+                start_time2 = datetime.now()
+                self.logBox.AppendText("\nCREATING MKV\n")
+                os.makedirs(self.textBox1.GetValue() + "/mkv")
+                dvdPath = self.mount_iso()
+                self.extract_dvd_metadata_xml(self.textBox1.GetValue() + "/mkv/dvd.xml", dvdPath)
+                self.extract_dvd_metadata_txt(self.textBox1.GetValue() + "/mkv/dvd.txt", dvdPath)
+                self.extract_iso_metadata_xml(self.textBox1.GetValue() + "/mkv/iso.xml") 
+                self.extract_iso_metadata_txt(self.textBox1.GetValue() + "/mkv/iso.txt") 
+                self.generate_ffmpeg_command(self.textBox1.GetValue() + "/mkv/dvd.xml")
                 self.create_matroska()
+                self.extract_mkv_metadata_xml(self.textBox1.GetValue() + "/mkv/mkv.xml", self.textBox1.GetValue() + "/mkv/" + self.textBox2.GetValue() + ".mkv") 
+                self.extract_mkv_metadata_txt(self.textBox1.GetValue() + "/mkv/mkv.txt", self.textBox1.GetValue() + "/mkv/" + self.textBox2.GetValue() + ".mkv")
                 self.quality_control()
-            
+                self.unmount_iso(dvdPath)
+                self.logBox.AppendText(" Time Elapsed = " + str(datetime.now()-start_time2) + "\n")
+                
             if self.makeMP4.GetValue():
+                start_time3 = datetime.now()
+                self.logBox.AppendText("\nCREATING MP4\n")
+                os.makedirs(self.textBox1.GetValue() + "/mp4")
+                self.extract_iso_metadata_xml(self.textBox1.GetValue() + "/mp4/iso.xml") 
+                self.extract_iso_metadata_txt(self.textBox1.GetValue() + "/mp4/iso.txt") 
                 self.generate_handbrake_command()
                 self.create_mp4()
-        
-            self.logBox.AppendText("\nPROGRAM COMPLETE\n")
+                self.extract_mp4_metadata_xml(self.textBox1.GetValue() + "/mp4/mp4.xml", self.textBox1.GetValue() + "/mp4/" + self.textBox2.GetValue() + ".mp4") 
+                self.extract_mp4_metadata_txt(self.textBox1.GetValue() + "/mp4/mp4.txt", self.textBox1.GetValue() + "/mp4/" + self.textBox2.GetValue() + ".mp4")
+                self.logBox.AppendText(" Time Elapsed = " + str(datetime.now()-start_time3) + "\n")
             
-    def extractMetaDataToTxt(self):
-        global txtFile
-        
-        txtFile = self.textBox1.GetValue() + "/log-" + strftime("%y%m%H%M%S") + ".txt"
-        file = open(txtFile, "w")
-        
-        file.write("#####################################\nExtracting DVD MetaData to Text File\n#####################################\n\n")
-        self.logBox.AppendText("\n\n#############################\nExtracting DVD MetaData to Text File\n#############################\n\n")
-        
-        proc1 = subprocess.Popen("mediainfo -f %s" % self.textBox3.GetValue(), shell=True, stdout=subprocess.PIPE)
+            # save GUI log to txt file
+            self.logBox.SaveFile(self.textBox1.GetValue() + "/log.txt")
+            self.logFile = open(self.textBox1.GetValue() + "/log.txt", 'a')
+            self.logFile.write("\n" + strftime("%b %d %Y %H:%M:%S"))  
+            self.logFile.close()
+            
+            self.logBox.AppendText("\nPROGRAM COMPLETE\n")
 
-        # log to gui and txt file
-        for line in proc1.stdout:
-            wx.Yield()
-            file.write(line)
-            self.logBox.AppendText(line)
-        proc1.wait()
-                
-        file.write("DVD MetaData Extraction Completed.\n\n")
-        self.logBox.AppendText("DVD MetaData Extraction Completed.\n\n")
+            
+    def extract_dvd_metadata_xml(self, filePath, dvdPath):
+        file = open(filePath, "w")
+        
+        #log to GUI
+        self.logBox.AppendText(" Extracting DVD MetaData to XML File\n")
+        
+        # log to file
+        subprocess.call("mediainfo --Output=XML -f %s 2>&1" % dvdPath, shell=True, stdout=file)
+        file.close()
+        
+        # restore stdout to normal
+        sys.stdout = sys.__stdout__
+        
+    def extract_dvd_metadata_txt(self, filePath, dvdPath):
+        file = open(filePath, "w")
+        
+        #log to GUI
+        self.logBox.AppendText(" Extracting DVD MetaData to TEXT File\n")
+        
+        # log to file
+        file.write(strftime("%b %d %Y %H:%M:%S"))       
+        subprocess.call("mediainfo -f %s 2>&1" % dvdPath, shell=True, stdout=file)
         
         file.close()
         
         # restore stdout to normal
         sys.stdout = sys.__stdout__
         
-    def extractMetaDataToXML(self):
-        global xmlFile
+    ''' used to convert DVD to iso '''
+    def generate_dd_command(self):
+        global dd_command
+        global mount_dir
         
-        file1 = open(txtFile, "a")
-        file1.write("#####################################\nExtracting DVD MetaData to XML File\n#####################################\n")
-        self.logBox.AppendText("#############################\nExtracting DVD MetaData to XML File\n#############################\n") 
+        self.logBox.AppendText(" Generating DD Utility Command\n")
         
-        xmlFile = self.textBox1.GetValue() + "/xml-" + strftime("%y%m%H%M%S") + ".xml"
-        file2 = open(xmlFile, "w")
-        proc2 = subprocess.Popen("mediainfo --Output=XML -f %s" % self.textBox3.GetValue(), shell=True, stdout=file2)
-        proc2.wait()
+        # find mount directory for DVD
+        cmd = "mount | grep " + self.textBox3.GetValue() + " | awk '{print $1}'"
+        p1 = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
+        mount_dir = p1.stdout.read().rstrip('\n')
         
-        file1.write("\nOperation Completed.\n\n")
-        self.logBox.AppendText("\nOperation Completed.\n\n")
+        # construct dd_command using mount point found above
+        dd_command = "dd if=" + mount_dir + " of=" + self.textBox1.GetValue() + "/iso/" + self.textBox2.GetValue() + ".iso 2>&1"
         
-        file1.close()
-        file2.close()
+        self.logBox.AppendText("  DD command complete.\n")
+        self.logBox.AppendText("  DD command = " + dd_command + "\n")
+        
+    def create_iso(self):  
+        global iso 
+              
+        self.logBox.AppendText(" Unmounting DVD.\n")
+        unmount = subprocess.Popen("diskutil unmountDisk " + mount_dir + " 2>&1", shell=True, stdout=subprocess.PIPE)
+        
+        # log to wxTextCtrl
+        for line in unmount.stdout:
+            wx.Yield()
+            self.logBox.AppendText("  " + line)
+        unmount.wait()
+        
+        self.logBox.AppendText(" Launch DD Utility Command\n")
+        
+        dd = subprocess.Popen(dd_command, shell=True, stdout=subprocess.PIPE)
+        
+        # log to wxTextCtrl
+        for line in dd.stdout:
+            wx.Yield()
+            self.logBox.AppendText("  " + line)
+        dd.wait()
+        
+        self.logBox.AppendText("  ISO Successfully Created.\n")
+        iso = self.textBox1.GetValue() + "/iso/" + self.textBox2.GetValue() + ".iso"
+        
+        self.logBox.AppendText(" Creating MD5 checksum.\n")
+        md5_command = "openssl md5 " + self.textBox1.GetValue() + "/iso/" + self.textBox2.GetValue() + ".iso 2>&1"
+        md5 = subprocess.Popen(md5_command, shell=True, stdout=subprocess.PIPE)
+
+        # log to gui and txt file
+        for line in md5.stdout:
+            wx.Yield()
+            self.logBox.AppendText("  " + line)
+        md5.wait()
+        
+        self.logBox.AppendText(" Creating SHA-1 checksum.\n")
+        sha1_command = "openssl sha1 " + self.textBox1.GetValue() + "/iso/" + self.textBox2.GetValue() + ".iso 2>&1"
+        sha1 = subprocess.Popen(sha1_command, shell=True, stdout=subprocess.PIPE)
+
+        # log to wxTextCtrl
+        for line in sha1.stdout:
+            wx.Yield()
+            self.logBox.AppendText("  " + line)
+        sha1.wait()
+               
+        # restore stdout to normal
+        sys.stdout = sys.__stdout__
+        
+    def extract_iso_metadata_xml(self, filePath):
+        file = open(filePath, "w")
+        
+        #log to GUI
+        self.logBox.AppendText(" Extracting ISO MetaData to XML File\n")
+        
+        # log to file
+        file.write(strftime("%b %d %Y %H:%M:%S"))       
+        subprocess.call("mediainfo --Output=XML -f %s 2>&1" % iso, shell=True, stdout=file)
+        
+        file.close()
         
         # restore stdout to normal
         sys.stdout = sys.__stdout__
         
+    def extract_iso_metadata_txt(self, filePath):
+        file = open(filePath, "w")
+        
+        #log to GUI
+        self.logBox.AppendText(" Extracting ISO MetaData to TEXT File\n")
+        
+        # log to file
+        file.write(strftime("%b %d %Y %H:%M:%S"))     
+        subprocess.call("mediainfo -f %s 2>&1" % iso, shell=True, stdout=file)
+        
+        file.close()
+        
+        # restore stdout to normal
+        sys.stdout = sys.__stdout__
+        
+    def mount_iso(self):
+        cmd = "hdiutil mount " + iso + " | awk '{print $2}'"
+        p1 = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
+        return p1.stdout.read().rstrip('\n')
+        
     ''' used to convert iso to mkv '''
-    def generate_ffmpeg_command(self):
+    def generate_ffmpeg_command(self, xmlFile):
         global ffmpeg_command
         
         self.streams = []
         self.cntVideo = 0
         self.cntAudio = 0
         self.cntSubtitle = 0
-
-        file = open(txtFile, "a")
-        file.write("#####################################\nGenerating FFMPEG Command\n#####################################\n")        
-        self.logBox.AppendText("#############################\nGenerating FFMPEG Command\n#############################\n") 
         
-        file.write("\nAppending ISO to FFMPEG command.\n")
-        self.logBox.AppendText("\nAppending ISO to FFMPEG command.\n")
+        self.logBox.AppendText(" Generating FFMPEG Command\n") 
+        self.logBox.AppendText("  Appending ISO to FFMPEG command.\n")
         ffmpeg_command += iso
         
-        file.write("\nParsing XML file for aspect ratio from VIDEO_TS.IFO ... \n")
-        self.logBox.AppendText("\nParsing XML file for aspect ratio from VIDEO_TS.IFO ... \n")
+        self.logBox.AppendText("  Parsing XML file for aspect ratio from VIDEO_TS.IFO ... \n")
         self.tree = ET.parse(xmlFile)
         self.root = self.tree.getroot()
         
@@ -232,14 +338,11 @@ class Archiver(wx.Frame):
                 
         # get aspect ratio from <File> element located at index
         self.aspectRatio = self.root[self.index].find('track[@type="Video"]/Display_aspect_ratio').text 
-        file.write("Aspect Ratio found = " + str(self.aspectRatio) + "\n")
-        file.write("Appending aspect ratio to FFMPEG command.\n")
-        self.logBox.AppendText("Aspect Ratio found = " + str(self.aspectRatio) + "\n")
-        self.logBox.AppendText("Appending aspect ratio to FFMPEG command.\n")
+        self.logBox.AppendText("   Aspect Ratio found = " + str(self.aspectRatio) + "\n")
+        self.logBox.AppendText("   Appending aspect ratio to FFMPEG command.\n")
         ffmpeg_command += " -aspect " + self.aspectRatio
                 
-        file.write("\nChecking number of streams ... \n")
-        self.logBox.AppendText("\nChecking number of streams ... \n")
+        self.logBox.AppendText("  Checking number of streams ... \n")
         proc3 = subprocess.Popen("ffmpeg -i %s 2>&1 | grep Stream | awk '{print $3}'" % iso, shell=True, stdout=subprocess.PIPE)
 
         # redirect command line output into streams[] list
@@ -256,15 +359,10 @@ class Archiver(wx.Frame):
                 self.cntAudio += 1
             if stream == "Subtitle:":
                 self.cntSubtitle += 1
-                
-                
-        file.write(str(self.cntVideo) + " video streams detected.\n")
-        file.write(str(self.cntAudio) + " audio streams detected.\n")
-        file.write(str(self.cntSubtitle) + " subtitle streams detected.\n")
         
-        self.logBox.AppendText(str(self.cntVideo) + " video streams detected.\n")
-        self.logBox.AppendText(str(self.cntAudio) + " audio streams detected.\n")
-        self.logBox.AppendText(str(self.cntSubtitle) + " subtitle streams detected.\n")
+        self.logBox.AppendText("   " + str(self.cntVideo) + " video streams detected.\n")
+        self.logBox.AppendText("   " + str(self.cntAudio) + " audio streams detected.\n")
+        self.logBox.AppendText("   " + str(self.cntSubtitle) + " subtitle streams detected.\n")
         
         for i in range(0, self.cntVideo):
             ffmpeg_command += " -vcodec ffv1"
@@ -275,9 +373,8 @@ class Archiver(wx.Frame):
         for i in range(0, self.cntSubtitle):
             ffmpeg_command += " -scodec copy"
             
-        file.write("\nAppending MKV path to FFMPEG Command.\n")
-        self.logBox.AppendText("\nAppending MKV path to FFMPEG Command.\n")
-        ffmpeg_command += " -f matroska " + self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".mkv"
+        self.logBox.AppendText("  Appending MKV path to FFMPEG Command.\n")
+        ffmpeg_command += " -f matroska " + self.textBox1.GetValue() + "/mkv/" + self.textBox2.GetValue() + ".mkv"
         
         if self.cntVideo>1:
             for i in range(1, self.cntVideo):
@@ -286,178 +383,74 @@ class Archiver(wx.Frame):
         elif self.cntAudio > 1:
             for i in range(1, self.cntAudio):
                 ffmpeg_command += ""
-        
-        file.write("\nFFMPEG command complete.\n")
-        file.write("FFMPEG command = " + ffmpeg_command + "\n")
-        self.logBox.AppendText("\nFFMPEG command complete.\n")
-        self.logBox.AppendText("FFMPEG command = " + ffmpeg_command + "\n")
-        
-        file.close()
-        
+                
+        ffmpeg_command += " 2>&1"
+        self.logBox.AppendText("  FFMPEG command complete.\n")
+        self.logBox.AppendText("  FFMPEG command = " + ffmpeg_command + "\n")
+                
         # restore stdout to normal
         sys.stdout = sys.__stdout__
         
-    ''' used to convert iso to mp4 '''
-    def generate_handbrake_command(self):
-        global handbrake_command
-        
-        file = open(txtFile, "a")
-        file.write("#####################################\nGenerating HandBrake Command\n#####################################\n")
-        self.logBox.AppendText("#############################\nGenerating HandBrake Command\n#############################\n") 
-        handbrake_command += iso + " -o " + self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".mp4"
-
-        file.write("HandBrake command complete.\n")
-        file.write("HandBrake command = " + handbrake_command + "\n")
-        self.logBox.AppendText("\nHandBrake command complete.\n")
-        self.logBox.AppendText("HandBrake command = " + handbrake_command + "\n")
-        
-        file.close()
-        
-    ''' used to convert DVD to iso '''
-    def generate_dd_command(self):
-        global dd_command
-        global mount_dir
-        
-        file = open(txtFile, "a")
-        file.write("\n#####################################\nGenerating DD Command\n#####################################\n")
-        self.logBox.AppendText("\n#############################\nGenerating ISO Command\n#############################\n")
-        
-        # find mount directory for DVD
-        cmd = "mount | grep " + self.textBox3.GetValue() + " | awk '{print $1}'"
-        p1 = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
-        mount_dir = p1.stdout.read().rstrip('\n')
-        
-        # construct dd_command using mount point found above
-        dd_command = "dd if=" + mount_dir + " of=" + self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".iso"
-        
-        file.write("\nDD command complete.\n")
-        file.write("DD command = " + dd_command + "\n")
-        self.logBox.AppendText("\nDD command complete.\n")
-        self.logBox.AppendText("DD command = " + dd_command + "\n")
-        
-        file.close()
-        
     def create_matroska(self):
-        file = open(txtFile, "a")
-        file.write("\n#############################\nCreating Matroska File\n#############################\n")
-        self.logBox.AppendText("\n#############################\nCreating Matroska File\n#############################\n") 
+        self.logBox.AppendText(" Creating Matroska File\n") 
         
         proc4 = subprocess.Popen(ffmpeg_command, shell=True, stdout=subprocess.PIPE)
 
         # log to gui and txt file
         for line in proc4.stdout:
             wx.Yield()
-            file.write(line)
-            self.logBox.AppendText(line)
+            self.logBox.AppendText("  " + line)
         proc4.wait()
                 
-        file.write("\nMatroska Successfully Created.\n")
-        self.logBox.AppendText("\nMatroska Successfully Created.\n")
+        self.logBox.AppendText("  Matroska Successfully Created.\n")
         
-        file.write("\nCreating MD5 checksum.\n")
-        self.logBox.AppendText("\nCreating MD5 checksum.\n")
-        md5_command = "openssl md5 " + self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".mkv"
+        self.logBox.AppendText(" Creating MD5 checksum.\n")
+        md5_command = "openssl md5 " + self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".mkv 2>&1"
         md5 = subprocess.Popen(md5_command, shell=True, stdout=subprocess.PIPE)
 
         # log to gui and txt file
         for line in md5.stdout:
             wx.Yield()
-            file.write(line)
-            self.logBox.AppendText(line)
+            self.logBox.AppendText("  " + line)
         md5.wait()
         
-        file.write("\nCreating SHA-1 checksum.\n")
-        self.logBox.AppendText("\nCreating SHA-1 checksum.\n")
-        sha1_command = "openssl sha1 " + self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".mkv"
+        self.logBox.AppendText(" Creating SHA-1 checksum.\n")
+        sha1_command = "openssl sha1 " + self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".mkv 2>&1"
         sha1 = subprocess.Popen(sha1_command, shell=True, stdout=subprocess.PIPE)
 
         # log to gui and txt file
         for line in sha1.stdout:
             wx.Yield()
-            file.write(line)
-            self.logBox.AppendText(line)
+            self.logBox.AppendText("  " + line)
         sha1.wait()        
         
-        file.close()
-        
         # restore stdout to normal
         sys.stdout = sys.__stdout__
         
-    def create_mp4(self):
-        file = open(txtFile, "a")
-        file.write("\n#############################\nCreating MP4 File\n#############################\n")
-        self.logBox.AppendText("\n#############################\nCreating MP4 File\n#############################\n") 
+    def extract_mkv_metadata_xml(self, filePath, mkvPath):
+        file = open(filePath, "w")
         
-        proc5 = subprocess.Popen(handbrake_command, shell=True, stdout=subprocess.PIPE)
-
-        # log to gui and txt file
-        for line in proc5.stdout:
-            wx.Yield()
-            file.write(line)
-            self.logBox.AppendText(line)
-        proc5.wait()
-                
-        file.write("\nMP4 Successfully Created.\n\n")
-        self.logBox.AppendText("\nMP4 Successfully Created.\n\n")
+        #log to GUI
+        self.logBox.AppendText(" Extracting MKV MetaData to XML File\n")
+        
+        # log to file
+        file.write(strftime("%b %d %Y %H:%M:%S"))       
+        subprocess.call("mediainfo --Output=XML -f %s 2>&1" % mkvPath, shell=True, stdout=file)
         
         file.close()
         
         # restore stdout to normal
         sys.stdout = sys.__stdout__
         
-    def create_iso(self):
-        file = open(txtFile, "a")
-        file.write("\n#############################\nCreating ISO File\n#############################\n")
-        self.logBox.AppendText("\n#############################\nCreating ISO File\n#############################\n")
+    def extract_mkv_metadata_txt(self, filePath, mkvPath):
+        file = open(filePath, "w")
         
-        file.write("\nUnmounting DVD.\n")
-        self.logBox.AppendText("\nUnmounting DVD.\n")
-        unmount = subprocess.Popen("diskutil unmountDisk /dev/disk1", shell=True, stdout=subprocess.PIPE)
+        #log to GUI
+        self.logBox.AppendText(" Extracting MKV MetaData to TEXT File\n")
         
-        # log to gui and txt file
-        for line in unmount.stdout:
-            wx.Yield()
-            file.write(line)
-            self.logBox.AppendText(line)
-        unmount.wait()
-        
-        file.write("\nCreating Disc Image.\n")
-        self.logBox.AppendText("\nCreating Disc Image.\n")
-        procDD = subprocess.Popen(dd_command, shell=True, stdout=subprocess.PIPE)
-
-        # log to gui and txt file
-        for line in procDD.stdout:
-            wx.Yield()
-            file.write(line)
-            self.logBox.AppendText(line)
-        procDD.wait()
-        
-        file.write("ISO Successfully Created.\n")
-        self.logBox.AppendText("ISO Successfully Created.\n")
-        
-        file.write("\nCreating MD5 checksum.\n")
-        self.logBox.AppendText("\nCreating MD5 checksum.\n")
-        md5_command = "openssl md5 " + self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".iso"
-        md5 = subprocess.Popen(md5_command, shell=True, stdout=subprocess.PIPE)
-
-        # log to gui and txt file
-        for line in md5.stdout:
-            wx.Yield()
-            file.write(line)
-            self.logBox.AppendText(line)
-        md5.wait()
-        
-        file.write("\nCreating SHA-1 checksum.\n")
-        self.logBox.AppendText("\nCreating SHA-1 checksum.\n")
-        sha1_command = "openssl sha1 " + self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".iso"
-        sha1 = subprocess.Popen(sha1_command, shell=True, stdout=subprocess.PIPE)
-
-        # log to gui and txt file
-        for line in sha1.stdout:
-            wx.Yield()
-            file.write(line)
-            self.logBox.AppendText(line)
-        sha1.wait()
+        # log to file
+        file.write(strftime("%b %d %Y %H:%M:%S"))       
+        subprocess.call("mediainfo -f %s 2>&1" % mkvPath, shell=True, stdout=file)
         
         file.close()
         
@@ -465,68 +458,145 @@ class Archiver(wx.Frame):
         sys.stdout = sys.__stdout__
         
     def quality_control(self):
-        file = open(txtFile, "a")
-        file.write("\n#############################\nImplementing Quality Control\n#############################\n")
-        self.logBox.AppendText("\n#############################\nImplementing Quality Control\n#############################\n")
+        self.logBox.AppendText(" Implementing Quality Control on MKV\n")
         
-        os.makedirs(self.textBox1.GetValue() + "/original")
-        os.makedirs(self.textBox1.GetValue() + "/copy")
-        iso_bmp_command = "ffmpeg -i " + iso + " -vframes 100 " + self.textBox1.GetValue() + "/original/frameoriginal%03d.bmp"
-        mkv_bmp_command = "ffmpeg -i " + self.textBox1.GetValue() + "/" + self.textBox2.GetValue() + ".mkv" + " -vframes 100 " + self.textBox1.GetValue() + "/copy/framecopy%03d.bmp"
+        os.makedirs(self.textBox1.GetValue() + "/mkv/original")
+        os.makedirs(self.textBox1.GetValue() + "/mkv/copy")
+        iso_bmp_command = "ffmpeg -i " + iso + " -vframes 100 " + self.textBox1.GetValue() + "/mkv/original/frameoriginal%03d.bmp 2>&1"
+        mkv_bmp_command = "ffmpeg -i " + self.textBox1.GetValue() + "/mkv/" + self.textBox2.GetValue() + ".mkv" + " -vframes 100 " + self.textBox1.GetValue() + "/mkv/copy/framecopy%03d.bmp 2>&1"
         
-        file.write("\nRunning command: " + iso_bmp_command + "\n")
-        self.logBox.AppendText("\nRunning command: " + iso_bmp_command + "\n")
-    
+        self.logBox.AppendText("  Running command: " + iso_bmp_command + "\n")
         proc6 = subprocess.Popen(iso_bmp_command, shell=True, stdout=subprocess.PIPE)
         
         # log to gui and txt file
         for line in proc6.stdout:
             wx.Yield()
-            file.write(line)
-            self.logBox.AppendText(line)
+            self.logBox.AppendText("   " + line)
         proc6.wait()
         
         # restore stdout to normal
         sys.stdout = sys.__stdout__
 
-        file.write("\nRunning command: " + mkv_bmp_command + "\n")
-        self.logBox.AppendText("\nRunning command: " + mkv_bmp_command + "\n")
-        
+        self.logBox.AppendText("  Running command: " + mkv_bmp_command + "\n")
         proc7 = subprocess.Popen(mkv_bmp_command, shell=True, stdout=subprocess.PIPE)
         
         # log to gui and txt file
         for line in proc7.stdout:
             wx.Yield()
-            file.write(line)
-            self.logBox.AppendText(line)
+            self.logBox.AppendText("   " + line)
         proc7.wait()
         
         # restore stdout to normal
         sys.stdout = sys.__stdout__
         
-        file.write("\nUsing Structure Similarity (SSIM) Index to verify lossless conversion.\nPlease wait.\n")
-        self.logBox.AppendText("\nUsing Structure Similarity (SSIM) Index to verify lossless conversion.\nPlease wait.\n")
+        self.logBox.AppendText("  Using Structure Similarity (SSIM) Index to verify lossless conversion.\n  Please wait.\n")
         
-        (averageSSIM, standardDeviation) = runSSIM(self.textBox1.GetValue()+"/original/", self.textBox1.GetValue()+"/copy/")
-        file.write("\nAverage SSIM = " + str(averageSSIM))
-        file.write("\nStandard Deviation = " + str(standardDeviation) + "\n")
-        self.logBox.AppendText("\nAverage SSIM = " + str(averageSSIM))
-        self.logBox.AppendText("\nStandard Deviation = " + str(standardDeviation) + "\n")
+        (averageSSIM, standardDeviation) = runSSIM(self.textBox1.GetValue()+"/mkv/original/", self.textBox1.GetValue()+"/mkv/copy/")
+        self.logBox.AppendText("   Average SSIM = " + str(averageSSIM) + "\n")
+        self.logBox.AppendText("   Standard Deviation = " + str(standardDeviation) + "\n")
+
+        self.logBox.AppendText("  Removing temporary folders.\n")        
+        subprocess.call(['rm','-r',self.textBox1.GetValue() + '/mkv/original'])
+        subprocess.call(['rm','-r',self.textBox1.GetValue() + '/mkv/copy'])
         
-        file.write("\nRemoving temporary folders.\n")
-        self.logBox.AppendText("\nRemoving temporary folders.\n")
+        self.logBox.AppendText("  Quality Check Complete.\n\n")
         
-        subprocess.call(['rm','-r',self.textBox1.GetValue() + '/original'])
-        subprocess.call(['rm','-r',self.textBox1.GetValue() + '/copy'])
+    def unmount_iso(self, dvdPath):
+        # find mount directory for DVD
+        cmd = "mount | grep " + dvdPath + " | awk '{print $1}'"
+        p1 = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
+        mounting_point = p1.stdout.read().rstrip('\n')
         
-        file.write("\nQuality Check Complete.\n\n")
-        self.logBox.AppendText("\nQuality Check Complete.\n\n")
+        self.logBox.AppendText(" Unmounting DVD.\n")
+        unmount = subprocess.Popen("diskutil unmountDisk " + mounting_point + " 2>&1", shell=True, stdout=subprocess.PIPE)
+        
+        # log to wxTextCtrl
+        for line in unmount.stdout:
+            wx.Yield()
+            self.logBox.AppendText("  " + line)
+        unmount.wait()
+                
+    ''' used to convert iso to mp4 '''
+    def generate_handbrake_command(self):
+        global handbrake_command
+        
+        self.logBox.AppendText(" Generating HandBrake Command\n") 
+        handbrake_command += iso + " -o " + self.textBox1.GetValue() + "/mp4/" + self.textBox2.GetValue() + ".mp4 2>&1"
+
+        self.logBox.AppendText("  HandBrake command complete.\n")
+        self.logBox.AppendText("  HandBrake command = " + handbrake_command + "\n")
+                
+    def create_mp4(self):
+        self.logBox.AppendText(" Creating MP4 File\n") 
+        proc5 = subprocess.Popen(handbrake_command, shell=True, stdout=subprocess.PIPE)
+
+        # log to wxTextCtrl
+        for line in proc5.stdout:
+            wx.Yield()
+            self.logBox.AppendText("  " + line)
+        proc5.wait()
+                
+        self.logBox.AppendText("  MP4 Successfully Created.\n\n")
+                
+        # restore stdout to normal
+        sys.stdout = sys.__stdout__
+        
+    def extract_mp4_metadata_xml(self, filePath, mp4Path):
+        file = open(filePath, "w")
+        
+        #log to GUI
+        self.logBox.AppendText(" Extracting MP4 MetaData to XML File\n")
+        
+        # log to file
+        file.write(strftime("%b %d %Y %H:%M:%S"))       
+        subprocess.call("mediainfo --Output=XML -f %s 2>&1" % mp4Path, shell=True, stdout=file)
         
         file.close()
         
-    def textBoxValidator(self):
-        global iso # update iso var after validating it's path
+        # restore stdout to normal
+        sys.stdout = sys.__stdout__
         
+    def extract_mp4_metadata_txt(self, filePath, mp4Path):
+        file = open(filePath, "w")
+        
+        #log to GUI
+        self.logBox.AppendText(" Extracting MP4 MetaData to TEXT File\n")
+        
+        # log to file
+        file.write(strftime("%b %d %Y %H:%M:%S"))       
+        subprocess.call("mediainfo -f %s 2>&1" % mp4Path, shell=True, stdout=file)
+        
+        file.close()
+        
+        # restore stdout to normal
+        sys.stdout = sys.__stdout__
+        
+    def validator(self):
+        if not self.makeISO.GetValue() and not self.makeMKV.GetValue() and not self.makeMP4.GetValue():
+            wx.MessageBox("Nothing left to do.\n\nSelect at least one of the following archive media format:\nISO, MKV, or MP4", "Error")
+            self.textBox1.SetBackgroundColour(wx.SystemSettings_GetColour(wx.SYS_COLOUR_WINDOW))
+            self.textBox1.Refresh()
+            self.textBox2.SetBackgroundColour(wx.SystemSettings_GetColour(wx.SYS_COLOUR_WINDOW))
+            self.textBox2.Refresh()
+            self.textBox3.SetBackgroundColour(wx.SystemSettings_GetColour(wx.SYS_COLOUR_WINDOW))
+            self.textBox3.Refresh()
+            self.textBox4.SetBackgroundColour(wx.SystemSettings_GetColour(wx.SYS_COLOUR_WINDOW))
+            self.textBox4.Refresh()
+            return False
+        else:
+            if self.makeISO.GetValue():
+                if self.validate_output_dir() and self.validate_output_file_name() and self.validate_dvd_dir():
+                    return True
+                else:
+                    return False
+                
+            elif not self.makeISO.GetValue() and (self.makeMKV.GetValue() or self.makeMP4.GetValue()):
+                if self.validate_output_dir() and self.validate_output_file_name() and self.validate_iso_file():
+                    return True
+                else:
+                    return False
+                
+    def validate_output_dir(self):
         # check if textbox is empty
         if len(self.textBox1.GetValue()) == 0: 
             wx.MessageBox("Please enter an output directory.", "Error")
@@ -535,17 +605,20 @@ class Archiver(wx.Frame):
             self.textBox1.Refresh()
             return False
         else:
-             self.textBox1.SetBackgroundColour(wx.SystemSettings_GetColour(wx.SYS_COLOUR_WINDOW))
-             self.textBox1.Refresh()
+            self.textBox1.SetBackgroundColour(wx.SystemSettings_GetColour(wx.SYS_COLOUR_WINDOW))
+            self.textBox1.Refresh()
              
-             # check if directory exists
-             if not os.path.exists(self.textBox1.GetValue()):
+            # check if directory exists
+            if not os.path.exists(self.textBox1.GetValue()):
                 wx.MessageBox("The directory does not exist.\nVerify your spelling and format or use the directory dialog.", "Error")
                 self.textBox1.SetBackgroundColour("pink")
                 self.textBox1.SetFocus()
                 self.textBox1.Refresh()
                 return False
-             
+            else:
+                return True
+            
+    def validate_output_file_name(self):
         # check if textbox is empty
         if len(self.textBox2.GetValue()) == 0: 
             wx.MessageBox("Please enter a file name.", "Error")
@@ -564,7 +637,10 @@ class Archiver(wx.Frame):
                 self.textBox2.SetFocus()
                 self.textBox2.Refresh()
                 return False
-         
+            else:
+                return True
+            
+    def validate_dvd_dir(self):
         # check if textbox is empty
         if len(self.textBox3.GetValue()) == 0:
             wx.MessageBox("Please enter a DVD directory. If you're using an ISO instead of a physical DVD, be sure to mount it first.", "Error")
@@ -583,45 +659,41 @@ class Archiver(wx.Frame):
                 self.textBox3.SetFocus()
                 self.textBox3.Refresh()
                 return False
+            else:
+                return True
             
+    def validate_iso_file(self):
+        global iso # update iso var after validating it's path
+  
         # check if textbox is empty
-        if self.makeMKV.GetValue() or self.makeMP4.GetValue():
-            if len(self.textBox4.GetValue()) == 0:
-                wx.MessageBox("Please select a .iso file. It is required to create MKV or MP4.", "Error")
+        if len(self.textBox4.GetValue()) == 0:
+            wx.MessageBox("Please select a .iso file. It is required to create MKV or MP4.", "Error")
+            self.textBox4.SetBackgroundColour("pink")
+            self.textBox4.SetFocus()
+            self.textBox4.Refresh()
+            return False
+        else:
+            self.textBox4.SetBackgroundColour(wx.SystemSettings_GetColour(wx.SYS_COLOUR_WINDOW))
+            self.textBox4.Refresh()
+
+            # check if directory exists
+            if not os.path.exists(self.textBox4.GetValue()):
+                wx.MessageBox("The iso file does not exist.\nVerify your spelling and format or use the directory dialog.", "Error")
                 self.textBox4.SetBackgroundColour("pink")
                 self.textBox4.SetFocus()
                 self.textBox4.Refresh()
                 return False
             else:
-                self.textBox4.SetBackgroundColour(wx.SystemSettings_GetColour(wx.SYS_COLOUR_WINDOW))
-                self.textBox4.Refresh()
-
-                # check if directory exists
-                if not os.path.exists(self.textBox4.GetValue()):
-                    wx.MessageBox("The iso file does not exist.\nVerify your spelling and format or use the directory dialog.", "Error")
-                    self.textBox4.SetBackgroundColour("pink")
-                    self.textBox4.SetFocus()
-                    self.textBox4.Refresh()
-                    return False
-                else:
-                    iso = self.textBox4.GetValue()
-             
-        return True
-        
-    def checkBoxValidator(self):
-        if self.makeISO.GetValue() or self.makeMKV.GetValue() or self.makeMP4.GetValue():
-            return True
-        else:
-            wx.MessageBox("Nothing left to do.\n\nSelect at least one of the following archive media format:\nISO, MKV, or MP4", "Error")
-            return False
+                iso = self.textBox4.GetValue()
+                return True
         
     def open_help(self, event):
         msg = wordwrap(
             "Output Directory\nType or Select the directory in which you wish to store all output files.\nFormat: /path/to/folder/\n\n"
             "Output File Name\nProvide a name to be used for all generated files.\nAllowed characters: letters, numbers, hyphen, underscore\n\n"
-            "DVD Directory\nType or Select the directory of the Master DVD.\nIf ISO is used, be sure to mount it first.\nFormat: /path/to/dvd/folder/\n\n"
-            "ISO File\nType or Select the directory of the ISO file if creating MKV or MP4.\nFormat: /path/to/dvd/folder/\n\n"
-            "Optional Attributes\nSelect the preservation media files that you would like to be generated.\n\n"
+            "DVD Directory\nType or Select the directory of the Master DVD.\nFormat: /path/to/dvd/folder/\n\n"
+            "ISO File\nType or Select the directory of the ISO file if creating MKV or MP4.\nFormat: /path/to/iso/file/\n\n"
+            "Preservation Media Types\nSelect the preservation media files that you would like to be generated.\n\n"
             "Logging\nAll application procedures will be documented in the program log window.\n\n",
             500, wx.ClientDC(self.panel))
         helpWindow = GMD.GenericMessageDialog(self, msg,"Help", wx.OK | wx.ICON_QUESTION)
@@ -673,6 +745,51 @@ class Archiver(wx.Frame):
             self.selectedPath = dlg.GetPath()
             self.textBox4.SetValue(self.selectedPath)
         dlg.Destroy()
+        
+    def toggle_visibility(self, event):
+        if self.makeISO.GetValue() and not self.makeMKV.GetValue() and not self.makeMP4.GetValue():
+            # hide iso txt box and browse button
+            self.button3.Hide()
+            self.textBox4.SetValue("")
+            self.textBox4.SetEditable(False)
+            self.textBox4.SetBackgroundColour((220,220,220))
+            
+        elif self.makeISO.GetValue() and (self.makeMKV.GetValue() or self.makeMP4.GetValue()):
+            # show dvd txt box and browse button
+            self.button2.Show()
+            self.textBox3.SetEditable(True)
+            self.textBox3.SetBackgroundColour((255,255,255))
+            
+            # hide iso txt box and browse button
+            # will use generated iso for mkv/mp4 conversion
+            self.button3.Hide()
+            self.textBox4.SetValue("")
+            self.textBox4.SetEditable(False)
+            self.textBox4.SetBackgroundColour((220,220,220))
+            
+        elif not self.makeISO.GetValue() and (self.makeMKV.GetValue() or self.makeMP4.GetValue()):
+            # show iso txt box and browse button
+            self.button3.Show()
+            self.textBox4.SetEditable(True)
+            self.textBox4.SetBackgroundColour((255,255,255))
+            
+            # hide dvd txt box and browse button 
+            # will mount iso to extract metadata
+            self.button2.Hide()
+            self.textBox3.SetValue("")
+            self.textBox3.SetEditable(False)
+            self.textBox3.SetBackgroundColour((220,220,220))
+    
+        else:
+            # show iso txt box and browse button
+            self.button3.Show()
+            self.textBox4.SetEditable(True)
+            self.textBox4.SetBackgroundColour((255,255,255))
+            
+            # show dvd txt box and browse button
+            self.button2.Show()
+            self.textBox3.SetEditable(True)
+            self.textBox3.SetBackgroundColour((255,255,255))
 
 if __name__ == '__main__':
 
