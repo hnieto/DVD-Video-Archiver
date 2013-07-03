@@ -22,7 +22,7 @@ The scripts and corresponding python libraries have been packaged into a standal
 
 * Open a terminal window (Applications > Utilities > Terminal)   
 * Edit your `.profile` with your favorite editor (ie. run `vi ~/.profile`)    
-* find the line that starts with `export PATH=` and change it to `export PATH=/folder/containing/handbrakecli/:$PATH`  
+* find the line that starts with `export PATH=` and change it to `export PATH="/folder/containing/handbrakecli/:$PATH"`  
 * close your editor (if using vi, type `:wq!`)   
 * reload your `.profile` by running `source ~/.profile`  
 * verify your changes by running `echo $PATH`  
