@@ -24,7 +24,7 @@ iso = ""
 mount_dir = ""
 dd_command = ""
 ffmpeg_command = "ffmpeg -i "
-handbrake_command = "HandBrakeCLI -i "
+handbrake_command = "HandBrakeCLI --main-feature -e x264  -q 20.0 -a -E faac -B 160 -6 dpl2 -R Auto -D 0.0 -f mp4 -O --strict-anamorphic -m -x ref=1:weightp=1:subq=2:rc-lookahead=10:trellis=0:8x8dct=0 -i "
 
 class Archiver(wx.Frame):
 
@@ -136,8 +136,8 @@ class Archiver(wx.Frame):
                 start_time1 = datetime.now()
                 self.logBox.AppendText("\nCREATING ISO\n")
                 os.makedirs(self.textBox1.GetValue() + "/iso")
-                self.extract_dvd_metadata_xml(self.textBox1.GetValue() + "/iso/dvd.xml", self.textBox3.GetValue()) 
-                self.extract_dvd_metadata_txt(self.textBox1.GetValue() + "/iso/dvd.txt", self.textBox3.GetValue())
+                self.extract_dvd_metadata_xml(self.textBox1.GetValue() + "/iso/dvd.xml", "\"" + self.textBox3.GetValue() + "\"") 
+                self.extract_dvd_metadata_txt(self.textBox1.GetValue() + "/iso/dvd.txt", "\"" + self.textBox3.GetValue() + "\"")
                 self.generate_dd_command()
                 self.create_iso()
                 self.extract_iso_metadata_xml(self.textBox1.GetValue() + "/iso/iso.xml") 
@@ -218,7 +218,7 @@ class Archiver(wx.Frame):
         self.logBox.AppendText(" Generating DD Utility Command\n")
         
         # find mount directory for DVD
-        cmd = "mount | grep " + self.textBox3.GetValue() + " | awk '{print $1}'"
+        cmd = "mount | grep " + "\"" + self.textBox3.GetValue() + "\"" + " | awk '{print $1}'"
         p1 = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
         mount_dir = p1.stdout.read().rstrip('\n')
         
@@ -609,7 +609,7 @@ class Archiver(wx.Frame):
             self.textBox1.Refresh()
              
             # check if directory exists
-            if not os.path.exists(self.textBox1.GetValue()):
+            if not os.path.exists("%s" % self.textBox1.GetValue()):
                 wx.MessageBox("The directory does not exist.\nVerify your spelling and format or use the directory dialog.", "Error")
                 self.textBox1.SetBackgroundColour("pink")
                 self.textBox1.SetFocus()
@@ -653,7 +653,7 @@ class Archiver(wx.Frame):
             self.textBox3.Refresh()
 
             # check if directory exists
-            if not os.path.exists(self.textBox3.GetValue()):
+            if not os.path.exists("%s" % self.textBox3.GetValue()):
                 wx.MessageBox("The directory does not exist.\nVerify your spelling and format or use the directory dialog.", "Error")
                 self.textBox3.SetBackgroundColour("pink")
                 self.textBox3.SetFocus()
